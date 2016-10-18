@@ -21,7 +21,7 @@ func New(session *session.Session, config *_aws.Config) *Client {
 	}
 }
 
-func (c *Client) GetCluster(clusterName string) (*_ecs.Cluster, error) {
+func (c *Client) RetrieveCluster(clusterName string) (*_ecs.Cluster, error) {
 	if clusterName == "" {
 		return nil, errors.New("clusterName is empty")
 	}

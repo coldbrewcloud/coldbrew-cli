@@ -4,12 +4,13 @@ import (
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/coldbrewcloud/coldbrew-cli/aws/autoscaling"
+	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecr"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecs"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/elb"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/iam"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/sns"
-	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 )
 
 type Client struct {
@@ -17,16 +18,20 @@ type Client struct {
 	config  *_aws.Config
 }
 
-func NewClient(region string) *Client {
+func NewClient(region, accessKey, secretKey string) *Client {
+	config := _aws.NewConfig().WithRegion(region)
+	if accessKey != "" {
+		config = config.WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
+	}
+
 	return &Client{
 		session: session.New(),
-		config:  _aws.NewConfig().WithRegion(region),
+		config:  config,
 	}
 }
 
-func (c *Client) WithCredentials(accessKey, secretKey string) *Client {
-	c.config = c.config.WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
-	return c
+func (c *Client) AutoScaling() *autoscaling.Client {
+	return autoscaling.New(c.session, c.config)
 }
 
 func (c *Client) EC2() *ec2.Client {

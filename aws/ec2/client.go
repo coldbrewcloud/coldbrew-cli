@@ -32,10 +32,11 @@ func New(session *session.Session, config *_aws.Config) *Client {
 	}
 }
 
-func (c *Client) CreateSecurityGroup(name, vpcID string) (string, error) {
+func (c *Client) CreateSecurityGroup(name, description, vpcID string) (string, error) {
 	params := &_ec2.CreateSecurityGroupInput{
-		GroupName: _aws.String(name),
-		VpcId:     _aws.String(vpcID),
+		GroupName:   _aws.String(name),
+		Description: _aws.String(description),
+		VpcId:       _aws.String(vpcID),
 	}
 
 	res, err := c.svc.CreateSecurityGroup(params)
@@ -172,10 +173,49 @@ func (c *Client) CreateInstances(instanceType, imageID string, instanceCount uin
 
 	res, err := c.svc.RunInstances(params)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return res.Instances, nil
+}
+
+func (c *Client) RetrieveVPC(vpcID string) (*_ec2.Vpc, error) {
+	params := &_ec2.DescribeVpcsInput{
+		VpcIds: _aws.StringSlice([]string{vpcID}),
+	}
+
+	res, err := c.svc.DescribeVpcs(params)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Vpcs != nil && len(res.Vpcs) > 0 {
+		return res.Vpcs[0], nil
+	}
+
+	return nil, nil
+}
+
+func (c *Client) RetrieveDefaultVPC() (*_ec2.Vpc, error) {
+	params := &_ec2.DescribeVpcsInput{
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("isDefault"),
+				Values: _aws.StringSlice([]string{"true"}),
+			},
+		},
+	}
+
+	res, err := c.svc.DescribeVpcs(params)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Vpcs != nil && len(res.Vpcs) > 0 {
+		return res.Vpcs[0], nil
+	}
+
+	return nil, nil
 }
 
 func (c *Client) ListVPCs() ([]string, error) {
@@ -215,4 +255,21 @@ func (c *Client) ListVPCSubnets(vpcID string) ([]string, error) {
 	}
 
 	return subnetIDs, nil
+}
+
+func (c *Client) RetrieveKeyPair(keyPairName string) (*_ec2.KeyPairInfo, error) {
+	params := &_ec2.DescribeKeyPairsInput{
+		KeyNames: _aws.StringSlice([]string{keyPairName}),
+	}
+
+	res, err := c.svc.DescribeKeyPairs(params)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.KeyPairs != nil && len(res.KeyPairs) > 0 {
+		return res.KeyPairs[0], nil
+	}
+
+	return nil, nil
 }

@@ -1,20 +1,17 @@
 package config
 
 type Config struct {
-	Name         string              `json:"name" yaml:"name"`
-	Port         uint16              `json:"port" yaml:"port"`
-	Resources    *ConfigResources    `json:"resources" yaml:"resources"`
-	Env          map[string]string   `json:"env" yaml:"env"`
-	Logging      *ConfigLogging      `json:"logging" yaml:"logging"`
+	Name        string            `json:"name" yaml:"name"`
+	ClusterName string            `json:"cluster" yaml:"cluster"`
+	Port        uint16            `json:"port" yaml:"port"`
+	CPU         float64           `json:"cpu" yaml:"cpu"`
+	Memory      string            `json:"memory" yaml:"memory"`
+	Units       uint16            `json:"units" yaml:"units"`
+	Env         map[string]string `json:"env" yaml:"env"`
+	//Logging      *ConfigLogging      `json:"logging" yaml:"logging"`
 	LoadBalancer *ConfigLoadBalancer `json:"load_balancer" yaml:"load_balancer"`
 	AWS          *ConfigAWS          `json:"aws" yaml:"aws"`
 	Docker       *ConfigDocker       `json:"docker" yaml:"docker"`
-}
-
-type ConfigResources struct {
-	CPU    float64 `json:"cpu" yaml:"cpu"`
-	Memory string  `json:"memory" yaml:"memory"`
-	Units  uint16  `json:"units" yaml:"units"`
 }
 
 type ConfigLogging struct {
@@ -39,11 +36,7 @@ type ConfigLoadBalancerHealthCheck struct {
 }
 
 type ConfigAWS struct {
-	VPC                string                       `json:"vpc" yaml:"vpc"`
-	ClusterName        string                       `json:"cluster_name" yaml:"cluster_name"`
-	ServiceRole        string                       `json:"service_role" yaml:"service_role"`
-	ECRNamespace       string                       `json:"ecr_namespace" yaml:"ecr_namespace"`
-	ContainerInstances *ConfigAWSContainerInstances `json:"container_instances" yaml:"container_instances"`
+	VPC string `json:"vpc" yaml:"vpc"`
 }
 
 type ConfigAWSContainerInstances struct {

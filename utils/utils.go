@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"os"
 	"regexp"
 )
 
@@ -25,4 +26,9 @@ func AsMap(v interface{}) (map[string]interface{}, error) {
 
 func IsBlank(s string) bool {
 	return blankRE.MatchString(s)
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
 type Client struct {
@@ -83,4 +84,95 @@ func (c *Client) AttachRolePolicy(policyARN, roleName string) error {
 	}
 
 	return nil
+}
+
+func (c *Client) ListRolePolicyNames(roleName string) ([]string, error) {
+	policyNames := []string{}
+	var marker *string
+
+	for {
+		params := &_iam.ListRolePoliciesInput{
+			Marker:   marker,
+			RoleName: _aws.String(roleName),
+		}
+
+		res, err := c.svc.ListRolePolicies(params)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range res.PolicyNames {
+			policyNames = append(policyNames, conv.S(p))
+		}
+
+		if !conv.B(res.IsTruncated) {
+			break
+		}
+
+		marker = res.Marker
+	}
+
+	return policyNames, nil
+}
+
+func (c *Client) DetachRolePolicy(policyARN, roleName string) error {
+	params := &_iam.DetachRolePolicyInput{
+		PolicyArn: _aws.String(policyARN),
+		RoleName:  _aws.String(roleName),
+	}
+
+	_, err := c.svc.DetachRolePolicy(params)
+
+	return err
+}
+
+func (c *Client) DeleteRole(roleName string) error {
+	params := &_iam.DeleteRoleInput{
+		RoleName: _aws.String(roleName),
+	}
+
+	_, err := c.svc.DeleteRole(params)
+
+	return err
+}
+
+func (c *Client) CreateInstanceProfile(profileName string) (*_iam.InstanceProfile, error) {
+	params := &_iam.CreateInstanceProfileInput{
+		InstanceProfileName: _aws.String(profileName),
+	}
+
+	res, err := c.svc.CreateInstanceProfile(params)
+	if err != nil {
+		return nil, err
+	}
+
+	if res != nil {
+		return res.InstanceProfile, nil
+	}
+
+	return nil, nil
+}
+
+func (c *Client) AddRoleToInstanceProfile(profileName, roleName string) error {
+	params := &_iam.AddRoleToInstanceProfileInput{
+		InstanceProfileName: _aws.String(profileName),
+		RoleName:            _aws.String(roleName),
+	}
+
+	_, err := c.svc.AddRoleToInstanceProfile(params)
+
+	return err
+}
+
+func (c *Client) RetrieveInstanceProfile(profileName string) (*_iam.InstanceProfile, error) {
+	params := &_iam.GetInstanceProfileInput{
+		InstanceProfileName: _aws.String(profileName),
+	}
+
+	res, err := c.svc.GetInstanceProfile(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.InstanceProfile, nil
 }

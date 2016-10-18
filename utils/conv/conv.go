@@ -35,3 +35,10 @@ func U64(p *uint64) uint64 {
 	}
 	return *p
 }
+
+func B(p *bool) bool {
+	if p == nil {
+		return false
+	}
+	return *p
+}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
+	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/docker"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
@@ -13,23 +14,23 @@ import (
 )
 
 type DeployCommand struct {
-	appFlags    *flags.AppFlags
+	globalFlags *flags.GlobalFlags
 	deployFlags *flags.DeployFlags
 	awsClient   *aws.Client
 }
 
-func (dc *DeployCommand) Init(ka *kingpin.Application, appFlags *flags.AppFlags) *kingpin.CmdClause {
-	dc.appFlags = appFlags
+func (dc *DeployCommand) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) *kingpin.CmdClause {
+	dc.globalFlags = globalFlags
 
 	cmd := ka.Command("deploy", "Deploy app")
 	dc.deployFlags = flags.NewDeployFlags(cmd)
 
-	dc.awsClient = aws.NewClient(*dc.appFlags.AWSRegion).WithCredentials(*dc.appFlags.AWSAccessKey, *dc.appFlags.AWSSecretKey)
+	dc.awsClient = aws.NewClient(conv.S(dc.globalFlags.AWSRegion), conv.S(dc.globalFlags.AWSAccessKey), conv.S(dc.globalFlags.AWSSecretKey))
 
 	return cmd
 }
 
-func (dc *DeployCommand) Run() error {
+func (dc *DeployCommand) Run(cfg *config.Config) error {
 	if err := dc.validateFlags(); err != nil {
 		return err
 	}

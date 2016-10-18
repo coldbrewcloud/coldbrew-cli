@@ -1,21 +1,23 @@
-package delete
+package destroy
 
 import (
+	"errors"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-type DeleteCommand struct {
-	appFlags    *flags.AppFlags
+type DestroyCommand struct {
+	appFlags    *flags.GlobalFlags
 	deployFlags *flags.DeployFlags
 	awsClient   *aws.Client
 }
 
-func (dc *DeleteCommand) Init(ka *kingpin.Application, appFlags *flags.AppFlags) *kingpin.CmdClause {
+func (dc *DestroyCommand) Init(ka *kingpin.Application, appFlags *flags.GlobalFlags) *kingpin.CmdClause {
 	dc.appFlags = appFlags
 
-	cmd := ka.Command("delete", "(delete description goes here)")
+	cmd := ka.Command("destroy", "(destroy description goes here)")
 	dc.deployFlags = flags.NewDeployFlags(cmd)
 
 	dc.awsClient = aws.NewClient(*dc.appFlags.AWSRegion).WithCredentials(*dc.appFlags.AWSAccessKey, *dc.appFlags.AWSSecretKey)
@@ -23,6 +25,6 @@ func (dc *DeleteCommand) Init(ka *kingpin.Application, appFlags *flags.AppFlags)
 	return cmd
 }
 
-func (dc *DeleteCommand) Run() error {
-	return nil
+func (dc *DestroyCommand) Run() error {
+	return errors.New("destory command not implemented")
 }

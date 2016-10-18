@@ -30,7 +30,7 @@ func (dc *DeployCommand) prepareECRRepo(repoName string) (string, error) {
 }
 
 func (dc *DeployCommand) prepareECSCluster(clusterName string) error {
-	cluster, err := dc.awsClient.ECS().GetCluster(clusterName)
+	cluster, err := dc.awsClient.ECS().RetrieveCluster(clusterName)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve ECS cluster [%s]: %s", clusterName, err.Error())
 	}
@@ -199,7 +199,7 @@ func (dc *DeployCommand) prepareELBLoadBalancer(lbName string, ecsServiceRoleNam
 		lbPort := uint16(80)
 
 		securityGroupName := fmt.Sprintf("elb-%s", lbName)
-		securityGroupID, err := dc.awsClient.EC2().CreateSecurityGroup(securityGroupName, conv.S(dc.deployFlags.VPCID))
+		securityGroupID, err := dc.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, conv.S(dc.deployFlags.VPCID))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create security group [%s]: %s", securityGroupName, err.Error())
 		}

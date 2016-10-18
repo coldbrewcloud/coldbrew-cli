@@ -189,11 +189,6 @@ func testStringFlag(t *testing.T, app *kingpin.Application, target **string, com
 	assert.Equal(t, "value2", **target)
 
 	if short != nil {
-		_, err = app.Parse(testArgs(command, fmt.Sprintf("-%c=value3", *short))) // set by param (short)
-		assert.Nil(t, err)
-		assert.NotNil(t, *target)
-		assert.Equal(t, "value3", **target)
-
 		_, err = app.Parse(testArgs(command, fmt.Sprintf("-%c", *short), "value4")) // set by param (short)
 		assert.Nil(t, err)
 		assert.NotNil(t, *target)

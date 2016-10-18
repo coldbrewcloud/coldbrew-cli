@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"os"
 
+	"io/ioutil"
+	"strings"
+
 	"github.com/coldbrewcloud/coldbrew-cli/commands"
-	"github.com/coldbrewcloud/coldbrew-cli/commands/delete"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/clustercreate"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/deploy"
-	"github.com/coldbrewcloud/coldbrew-cli/commands/setup"
+	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -20,14 +25,14 @@ const (
 
 type CLIApp struct {
 	kingpinApp *kingpin.Application
-	appFlags   *flags.AppFlags
+	appFlags   *flags.GlobalFlags
 	commands   map[string]commands.Command
 }
 
 func main() {
 	kingpinApp := kingpin.New(appName, appHelp)
 	kingpinApp.Version(Version)
-	appFlags := flags.NewAppFlags(kingpinApp)
+	globalFlags := flags.NewGlobalFlags(kingpinApp)
 
 	cmds := make(map[string]commands.Command)
 
@@ -35,18 +40,13 @@ func main() {
 	{
 		// deploy
 		deployCommand := &deploy.DeployCommand{}
-		kpDeployCommand := deployCommand.Init(kingpinApp, appFlags)
+		kpDeployCommand := deployCommand.Init(kingpinApp, globalFlags)
 		cmds[kpDeployCommand.FullCommand()] = deployCommand
 
-		// setup
-		setupCommand := &setup.SetupCommand{}
-		kpSetupCommand := setupCommand.Init(kingpinApp, appFlags)
-		cmds[kpSetupCommand.FullCommand()] = setupCommand
-
-		// delete
-		deleteCommand := &delete.DeleteCommand{}
-		kpDeleteCommand := deleteCommand.Init(kingpinApp, appFlags)
-		cmds[kpDeleteCommand.FullCommand()] = deleteCommand
+		// cluster-create
+		clusterCreateCommand := &clustercreate.Command{}
+		kpClusterCreateCommand := clusterCreateCommand.Init(kingpinApp, globalFlags)
+		cmds[kpClusterCreateCommand.FullCommand()] = clusterCreateCommand
 	}
 
 	// parse CLI inputs
@@ -57,27 +57,41 @@ func main() {
 	}
 
 	// setup debug logging
-	console.EnableDebugf(*appFlags.Debug, *appFlags.DebugLogPrefix)
+	console.EnableDebugf(*globalFlags.Verbose, "")
 
-	// app flags
-	/*
-		if *appFlags.Debug {
-			asMap, err := utils.AsMap(appFlags)
+	// load configuration file
+	var cfg *config.Config
+	{
+		configFile := conv.S(globalFlags.ConfigFile)
+		if !utils.IsBlank(configFile) {
+			data, err := ioutil.ReadFile(configFile)
 			if err != nil {
-				console.Errorf("Error enumerating app flags: %s", err.Error())
-				os.Exit(99)
+				console.Errorf("Failed to read configuration file [%s]: %s\n", configFile, err.Error())
+				os.Exit(10)
 			}
 
-			for k, v := range asMap {
-				console.Debugf("FLAG %s=%v\n", k, v)
+			configFileFormat := strings.ToLower(conv.S(globalFlags.ConfigFileFormat))
+			if configFileFormat == flags.GlobalFlagsConfigFileFormatYAML {
+				if err := cfg.FromYAML(data); err != nil {
+					console.Errorf("Failed to read configuration file in YAML: %s\n", err.Error())
+					os.Exit(11)
+				}
+			} else if configFileFormat == flags.GlobalFlagsConfigFileFormatJSON {
+				if err := cfg.FromJSON(data); err != nil {
+					console.Errorf("Failed to read configuration file in JSON: %s\n", err.Error())
+					os.Exit(11)
+				}
+			} else {
+				console.Errorf("Unknown configuration file format: %s\n", configFileFormat)
+				os.Exit(12)
 			}
 		}
-	*/
+	}
 
 	// execute command
 	for n, c := range cmds {
 		if n == cmd {
-			if err := c.Run(); err != nil {
+			if err := c.Run(cfg); err != nil {
 				console.Errorf("Error: %s\n", err.Error())
 				os.Exit(10)
 			}

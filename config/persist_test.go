@@ -7,13 +7,12 @@ import (
 )
 
 const testConfigYAML = `
-name: echo                          
+name: echo
+cluster: cluster1
 port: 8080                          
-
-resources:
-  cpu: 1.0                          
-  memory: 200m
-  units: 4                          
+cpu: 1.0
+memory: 200m
+units: 4
 
 env:                                
   key1: value1
@@ -38,14 +37,6 @@ load_balancer:
 
 aws:
   vpc: vpc-123456789                
-  cluster_name: cluster1
-  service_role: role1
-  ecr_namespace: myapps
-  container_instances:
-    security_group: sg-987654321
-    image_id: ami-123456789
-    keypair: key1                   
-    instance_type: t2.micro
 
 docker:
   bin: "/usr/local/bin/docker"      
@@ -54,18 +45,14 @@ docker:
 const testConfigJSON = `
 {
 	"name": "echo",
+	"cluster": "cluster1",
 	"port": 8080,
-	"resources": {
-		"cpu": 1.0,
-		"memory": "200m",
-		"units": 4
-	},
+	"cpu": 1.0,
+	"memory": "200m",
+	"units": 4,
 	"env": {
 		"key1": "value1",
 		"key2": "value2"
-	},
-	"logging": {
-		"type": "default"
 	},
 	"load_balancer": {
 		"name": "lb1",
@@ -82,37 +69,23 @@ const testConfigJSON = `
 		}
 	},
 	"aws": {
-		"vpc": "vpc-123456789",
-		"cluster_name": "cluster1",
-		"service_role": "role1",
-		"ecr_namespace": "myapps",
-		"container_instances": {
-			"security_group": "sg-987654321",
-			"image_id": "ami-123456789",
-			"keypair": "key1",
-			"instance_type": "t2.micro"
-		}
+		"vpc": "vpc-123456789"
 	},
 	"docker": {
 		"bin": "/usr/local/bin/docker"
 	}
-}
-`
+}`
 
 var testRefConfig = &Config{
-	Name: "echo",
-	Port: 8080,
-	Resources: &ConfigResources{
-		CPU:    1.0,
-		Memory: "200m",
-		Units:  4,
-	},
+	Name:        "echo",
+	ClusterName: "cluster1",
+	Port:        8080,
+	CPU:         1.0,
+	Memory:      "200m",
+	Units:       4,
 	Env: map[string]string{
 		"key1": "value1",
 		"key2": "value2",
-	},
-	Logging: &ConfigLogging{
-		Type: "default",
 	},
 	LoadBalancer: &ConfigLoadBalancer{
 		Name:          "lb1",
@@ -129,16 +102,7 @@ var testRefConfig = &Config{
 		},
 	},
 	AWS: &ConfigAWS{
-		VPC:          "vpc-123456789",
-		ClusterName:  "cluster1",
-		ServiceRole:  "role1",
-		ECRNamespace: "myapps",
-		ContainerInstances: &ConfigAWSContainerInstances{
-			SecurityGroup: "sg-987654321",
-			ImageID:       "ami-123456789",
-			KeyPair:       "key1",
-			InstanceType:  "t2.micro",
-		},
+		VPC: "vpc-123456789",
 	},
 	Docker: &ConfigDocker{
 		Bin: "/usr/local/bin/docker",
