@@ -12,7 +12,7 @@ func AskConfirm(message string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		stdout("%s %s: ", message, cc.Yellow("[y/N]"))
+		stdout("%s %s: ", cc.Blue(message), "[y/N]")
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -32,7 +32,7 @@ func AskConfirm(message string) bool {
 func AskQuestion(message, defaultValue string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	stdout("%s %s: ", message, cc.BlackH("["+defaultValue+"]"))
+	stdout("%s %s: ", cc.Blue(message), "["+defaultValue+"]")
 
 	response, err := reader.ReadString('\n')
 	if err != nil {

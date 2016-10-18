@@ -1,6 +1,7 @@
 package clustercreate
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -31,7 +32,7 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 	cmd := ka.Command("cluster-create", "(cluster-create description goes here)")
 	c.commandFlags = NewFlags(cmd)
 
-	c.clusterNameArg = cmd.Arg("cluster-name", "Cluster name").String()
+	c.clusterNameArg = cmd.Arg("cluster-name", "Cluster name").Required().String()
 
 	return cmd
 }
@@ -41,13 +42,216 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// cluster name
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
-	if clusterName == "" {
-		clusterName = console.AskQuestion("Enter cluster name", "cluster1")
-	}
-	console.Println("Cluster name:", cc.Green(clusterName))
+	//if clusterName == "" {
+	//	clusterName = console.AskQuestion("Enter cluster name", "cluster1")
+	//}
+	console.Println("Cluster")
+	console.Println(" ", cc.BlackH("Name"), cc.Green(clusterName))
 
-	// AWS region
-	console.Println("AWS region:", cc.Green(conv.S(c.globalFlags.AWSRegion)))
+	// AWS networking
+	regionName, vpcID, subnetIDs, err := c.getAWSNetwork()
+	if err != nil {
+		return c.exitWithError(err)
+	}
+	console.Println("AWS")
+	console.Println(" ", cc.BlackH("Region"), cc.Green(regionName))
+	console.Println(" ", cc.BlackH("VPC"), cc.Green(vpcID))
+	console.Println(" ", cc.BlackH("Subnets"), cc.Green(strings.Join(subnetIDs, " ")))
+
+	console.Println("Container Instances")
+
+	// instance profile
+	instanceProfileName := strings.TrimSpace(conv.S(c.commandFlags.InstanceProfile))
+	instanceProfileCreated := false
+	instanceProfileARN := ""
+	if instanceProfileName == "" {
+		instanceProfileName = fmt.Sprintf("coldbrew_%s_instance_profile", clusterName)
+
+		existingInstanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
+		if existingInstanceProfile != nil && err == nil {
+			if conv.B(c.commandFlags.SkipExisting) {
+				instanceProfileARN = conv.S(existingInstanceProfile.Arn)
+			} else {
+				return c.exitWithError(fmt.Errorf("Instance Profile [%s] already exists.", instanceProfileName))
+			}
+		} else {
+			var err error
+			instanceProfileARN, err = c.createFullAccessInstanceProfile(instanceProfileName)
+			if err != nil {
+				return c.exitWithError(fmt.Errorf("Failed to create IAM Instance Profile [%s]: %s", instanceProfileName, err.Error()))
+			}
+			instanceProfileCreated = true
+		}
+	} else {
+		instanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
+		if err != nil {
+			return c.exitWithError(err)
+		}
+		instanceProfileARN = conv.S(instanceProfile.Arn)
+	}
+
+	console.Print(" ", cc.BlackH("Profile"), cc.Green(instanceProfileName), "")
+	if instanceProfileCreated {
+		console.Println(cc.Yellow("(created)"))
+	} else {
+		console.Println(cc.BlackH("(existing/skipped)"))
+	}
+
+	// container instance type
+	instanceType := strings.TrimSpace(conv.S(c.commandFlags.InstanceType))
+	if instanceType == "" {
+		instanceType = console.AskQuestion("Enter instance type", defaultInstanceType)
+	}
+
+	console.Println(" ", cc.BlackH("Type"), cc.Green(instanceType))
+
+	// container instance image ID
+	imageID := c.getClusterImageID(conv.S(c.globalFlags.AWSRegion))
+	if imageID == "" {
+		return c.exitWithError(errors.New("No defatul instance image found"))
+	}
+
+	console.Println(" ", cc.BlackH("Image"), cc.Green(imageID))
+
+	// key pair
+	keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
+	keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
+	if err != nil {
+		return c.exitWithError(fmt.Errorf("Failed to retrieve key pair info [%s]: %s", keyPairName, err.Error()))
+	}
+	if keyPairInfo == nil {
+		return c.exitWithError(fmt.Errorf("Key pair [%s] was not found\n", keyPairName))
+	}
+
+	console.Println(" ", cc.BlackH("Keypair"), cc.Green(keyPairName))
+
+	// container instances security group
+	sgName := fmt.Sprintf("coldbrew_%s_sg", clusterName)
+	sgCreated := false
+	sgID := ""
+	existingSG, err := c.awsClient.EC2().RetrieveSecurityGroupByName(sgName)
+	if existingSG != nil && err == nil {
+		// SG already exists
+		if conv.B(c.commandFlags.SkipExisting) {
+			sgID = conv.S(existingSG.GroupId)
+		} else {
+			return c.exitWithError(fmt.Errorf("Security Group [%s] already exists.", sgName))
+		}
+	} else {
+		sgID, err = c.awsClient.EC2().CreateSecurityGroup(sgName, sgName, vpcID)
+		if err != nil {
+			return c.exitWithError(fmt.Errorf("Failed to create EC2 Security Group [%s] for container instances: %s", sgName, err.Error()))
+		}
+		if err := c.awsClient.EC2().AddInboundToSecurityGroup(sgID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
+			return c.exitWithError(fmt.Errorf("Failed to add SSH inbound rule to Security Group [%s]: %s", sgName, err.Error()))
+		}
+		sgCreated = true
+	}
+
+	console.Print(" ", cc.BlackH("Security Group"), cc.Green(sgName), "")
+	if sgCreated {
+		console.Println(cc.Yellow("(created)"))
+	} else {
+		console.Println(cc.BlackH("(existing/skipped)"))
+	}
+
+	ecsClusterName := fmt.Sprintf("coldbrew_%s", clusterName)
+	instanceUserData := c.getInstanceUserData(ecsClusterName)
+	initialCapacity := conv.U16(c.commandFlags.InitialCapacity)
+
+	console.Println("Auto Scaling")
+
+	// create launch configuration
+	lcName := fmt.Sprintf("coldbrew_%s_lc", clusterName)
+	lcCreated := false
+	existingLC, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(lcName)
+	if existingLC != nil && err == nil {
+		// launch configuration already exists
+		if !conv.B(c.commandFlags.SkipExisting) {
+			return c.exitWithError(fmt.Errorf("Launch Configuration [%s] already exists.", lcName))
+		}
+	} else {
+		err := c.awsClient.AutoScaling().CreateLaunchConfiguration(lcName, instanceType, imageID, []string{sgID}, keyPairName, instanceProfileARN, instanceUserData)
+		if err != nil {
+			return c.exitWithError(fmt.Errorf("Failed to create EC2 Launch Configuration [%s]: %s", lcName, err.Error()))
+		}
+		lcCreated = true
+	}
+
+	console.Print(" ", cc.BlackH("Launch Config"), cc.Green(lcName), "")
+	if lcCreated {
+		console.Println(cc.Yellow("(created)"))
+	} else {
+		console.Println(cc.BlackH("(existing/skipped)"))
+	}
+
+	// create auto scaling group
+	asgName := fmt.Sprintf("coldbrew_%s_asg", clusterName)
+	asgCreated := false
+	existingASG, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
+	if existingASG != nil && err == nil {
+		// auto scaling group already exists
+		if !conv.B(c.commandFlags.SkipExisting) {
+			return c.exitWithError(fmt.Errorf("Auto Scaling Group [%s] already exists.", asgName))
+		}
+	} else {
+		err = c.awsClient.AutoScaling().CreateAutoScalingGroup(asgName, lcName, subnetIDs, 0, initialCapacity, initialCapacity)
+		if err != nil {
+			return c.exitWithError(fmt.Errorf("Failed to create EC2 Auto Scaling Group [%s]: %s", asgName, err.Error()))
+		}
+		asgCreated = true
+	}
+
+	console.Print(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName), "")
+	if asgCreated {
+		console.Println(cc.Yellow("(created)"))
+	} else {
+		console.Println(cc.BlackH("(existing/skipped)"))
+	}
+
+	console.Println("ECS")
+
+	// create ECS cluster
+	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
+	ecsClusterCreated := false
+	if ecsCluster == nil || err != nil {
+		if _, err := c.awsClient.ECS().CreateCluster(ecsClusterName); err != nil {
+			return c.exitWithError(fmt.Errorf("Failed to create ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
+		}
+		ecsClusterCreated = true
+	}
+
+	console.Print(" ", cc.BlackH("Cluster"), cc.Green(ecsClusterName), "")
+	if ecsClusterCreated {
+		console.Println(cc.Yellow("(created)"))
+	} else {
+		console.Println(cc.BlackH("(existing/skipped)"))
+	}
+
+	// create ECS service role (IAM)
+	ecsServiceRoleName := fmt.Sprintf("coldbrew_%s_ecs_service_role", clusterName)
+	ecsServiceRoleCreated := false
+	existingRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
+	if existingRole == nil || err != nil {
+		_, err := c.createECSServiceRole(ecsServiceRoleName)
+		if err != nil {
+			return c.exitWithError(fmt.Errorf("Failed to create IAM role [%s]: %s", ecsServiceRoleName, err.Error()))
+		}
+		ecsServiceRoleCreated = true
+	}
+
+	console.Print(" ", cc.BlackH("Service Role"), cc.Green(ecsServiceRoleName), "")
+	if ecsServiceRoleCreated {
+		console.Println(cc.Yellow("(created)"))
+	} else {
+		console.Println(cc.BlackH("(existing/skipped)"))
+	}
+
+	return nil
+}
+
+func (c *Command) getAWSNetwork() (string, string, []string, error) {
+	regionName := strings.TrimSpace(conv.S(c.globalFlags.AWSRegion))
 
 	// VPC ID
 	vpcID := strings.TrimSpace(conv.S(c.commandFlags.VPC))
@@ -55,216 +259,32 @@ func (c *Command) Run(cfg *config.Config) error {
 		// find/use default VPC for the account
 		defaultVPC, err := c.awsClient.EC2().RetrieveDefaultVPC()
 		if err != nil {
-			console.Errorf("Failed to find the default VPC: %s\n", err.Error())
-			return nil
+			return "", "", nil, fmt.Errorf("Failed to retrieve default VPC: %s", err.Error())
 		} else if defaultVPC == nil {
-			console.Errorf("This AWS account does not have a default VPC configured. Specify VPC ID using --vpc flag.\n")
-			return nil
+			return "", "", nil, errors.New("No default VPC configured")
 		}
 
 		vpcID = conv.S(defaultVPC.VpcId)
-		console.Println("VPC:", cc.Green(vpcID), cc.BlackH("(default VPC)"))
 	} else {
-		vpcID = strings.TrimSpace(conv.S(c.commandFlags.VPC))
-
 		vpc, err := c.awsClient.EC2().RetrieveVPC(vpcID)
 		if err != nil {
-			console.Errorf("Failed to retrieve VPC [%s]: %s\n", cc.Green(vpcID), err.Error())
-			return nil
+			return "", "", nil, fmt.Errorf("Failed to retrieve VPC [%s] info: %s", vpcID, err.Error())
 		}
 		if vpc == nil {
-			console.Errorf("VPC [%s] does not exist.\n", cc.Red(vpcID))
-			return nil
+			return "", "", nil, fmt.Errorf("VPC [%s] not found", vpcID)
 		}
-
-		console.Println("VPC:", cc.Green(vpcID))
 	}
 
 	// Subnet IDs
 	subnetIDs, err := c.awsClient.EC2().ListVPCSubnets(vpcID)
 	if err != nil {
-		console.Errorf("Failed to list subnets in VPC [%s]: %s\n", cc.Red(vpcID), err.Error())
-	}
-	console.Println("Subnets:", cc.Green(strings.Join(subnetIDs, ", ")))
-
-	// instance profile
-	instanceProfileARN := strings.TrimSpace(conv.S(c.commandFlags.InstanceProfile))
-	if instanceProfileARN == "" {
-		instanceProfileName := fmt.Sprintf("coldbrew_%s_instance_profile", clusterName)
-		console.Printf("Creating IAM Instance Profile [%s] ...\n", cc.Green(instanceProfileName))
-
-		existingInstanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
-		if existingInstanceProfile != nil && err == nil {
-			if conv.B(c.commandFlags.ReuseResources) {
-				console.Printf("  > Existing IAM Instance Profile [%s] will be used.\n", cc.Green(instanceProfileName))
-				instanceProfileARN = conv.S(existingInstanceProfile.Arn)
-			} else {
-				// role already exists
-				if console.AskConfirm(fmt.Sprintf("  > Profile [%s] already exists.\n  > Do you want to use it?", cc.Green(instanceProfileName))) {
-					instanceProfileARN = conv.S(existingInstanceProfile.Arn)
-				} else {
-					console.Errorln("  > You can delete the existing profile, or, specify different IAM Instance Profile using --instance-profile flag.")
-					return nil
-				}
-			}
-		} else {
-			var err error
-			instanceProfileARN, err = c.createFullAccessInstanceProfile(instanceProfileName)
-			if err != nil {
-				console.Errorf("Failed to create IAM Instance Profile [%s]: %s", cc.Red(instanceProfileName), err.Error())
-				return nil
-			}
-		}
-
-	} else {
-		instanceProfileARN = strings.TrimSpace(conv.S(c.commandFlags.InstanceProfile))
-	}
-	console.Println("IAM Instance Profile:", cc.Green(instanceProfileARN))
-
-	// container instance image ID
-	imageID := c.getClusterImageID(conv.S(c.globalFlags.AWSRegion))
-	if imageID == "" {
-		console.Errorf("Failed to find image ID in AWS region [%s]\n", cc.Green(conv.S(c.globalFlags.AWSRegion)))
-		return nil
-	}
-	console.Printf("ECS Container Instance Image ID: %s\n", cc.Green(imageID))
-
-	// container instance type
-	instanceType := strings.TrimSpace(conv.S(c.commandFlags.InstanceType))
-	if instanceType == "" {
-		instanceType = console.AskQuestion("Enter EC2 Container Instance type", defaultInstanceType)
-	}
-	console.Println("ECS Container Instance type:", cc.Green(instanceType))
-
-	// key pair
-	keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
-	if keyPairName == "" {
-		console.Println("You did not specify the key pair, which is needed to access container instances.")
-		if !console.AskConfirm("  > Are you sure you don't want to create cluster without key pair?") {
-			console.Errorln("  > Use --keypair flag to specify the key pair name.")
-			return nil
-		}
-	} else {
-		keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
-		if err != nil {
-			console.Errorf("Failed to retrieve key pair info [%s]: %s\n", cc.Red(keyPairName), err.Error())
-			return nil
-		}
-		if keyPairInfo == nil {
-			console.Errorf("Key pair [%s] was not found\n", cc.Red(keyPairName))
-			return nil
-		}
-	}
-	console.Println("EC2 Key Pair name:", cc.Green(keyPairName))
-
-	// container instances security group
-	sgName := fmt.Sprintf("coldbrew_%s_sg", clusterName)
-	sgID := ""
-	console.Printf("Creating EC2 Security Group [%s] ...\n", cc.Green(sgName))
-	existingSG, err := c.awsClient.EC2().RetrieveSecurityGroupByName(sgName)
-	if existingSG != nil && err == nil {
-		// SG already exists
-		if conv.B(c.commandFlags.ReuseResources) {
-			console.Printf("  > Existing EC2 Security Group [%s] will be used.\n", cc.Green(sgName))
-			sgID = conv.S(existingSG.GroupId)
-		} else {
-			if console.AskConfirm(fmt.Sprintf("  > Security Group [%s] already exists.\n  > Do you want to use it?", cc.Green(sgName))) {
-				sgID = conv.S(existingSG.GroupId)
-			} else {
-				console.Errorln("  > You can delete the existing security group and try again.")
-				return nil
-			}
-		}
-	} else {
-		sgID, err = c.awsClient.EC2().CreateSecurityGroup(sgName, sgName, vpcID)
-		if err != nil {
-			console.Errorf("Failed to create EC2 Security Group [%s] for container instances: %", cc.Red(sgName), err.Error())
-			return nil
-		}
-		if err := c.awsClient.EC2().AddInboundToSecurityGroup(sgID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
-			console.Errorf("Failed to add inbound rule for SSH to EC2 Security Group [%s]: %s", cc.Red(sgName), err.Error())
-			return nil
-		}
+		return "", "", nil, fmt.Errorf("Failed to list subnets of VPC [%s]: %s", vpcID, err.Error())
 	}
 
-	ecsClusterName := fmt.Sprintf("coldbrew_%s", clusterName)
+	return regionName, vpcID, subnetIDs, nil
+}
 
-	// user data
-	instanceUserData := c.getInstanceUserData(ecsClusterName)
-
-	// create launch configuration
-	lcName := fmt.Sprintf("coldbrew_%s_lc", clusterName)
-	console.Printf("Creating EC2 Launch Configuration [%s] ...\n", cc.Green(lcName))
-	existingLC, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(lcName)
-	if existingLC != nil && err == nil {
-		// launch configuration already exists
-		if conv.B(c.commandFlags.ReuseResources) {
-			console.Printf("  > Existing EC2 Launch Configuration [%s] will be used.\n", cc.Green(lcName))
-		} else {
-			if !console.AskConfirm(fmt.Sprintf("  > EC2 Launch Configuration [%s] already exists.\n  > Do you want to use it?", cc.Green(lcName))) {
-				console.Errorln("  > You can delete the existing EC2 Launch Configuration and try again.")
-				return nil
-			}
-		}
-	} else {
-		err := c.awsClient.AutoScaling().CreateLaunchConfiguration(lcName, instanceType, imageID, []string{sgID}, keyPairName, instanceProfileARN, instanceUserData)
-		if err != nil {
-			console.Errorf("Failed to create EC2 Launch Configuration [%s]: %s\n", cc.Red(lcName), err.Error())
-			return nil
-		}
-	}
-
-	// initial instance count
-	initialCapacity := conv.U16(c.commandFlags.InitialCapacity)
-
-	// create auto scaling group
-	asgName := fmt.Sprintf("coldbrew_%s_asg", clusterName)
-	console.Printf("Creating EC2 Auto Scaling Group [%s] ...\n", cc.Green(asgName))
-	existingASG, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
-	if existingASG != nil && err == nil {
-		// auto scaling group already exists
-		if conv.B(c.commandFlags.ReuseResources) {
-			console.Printf("  > Existing EC2 Auto Scaling Group [%s] will be used.\n", cc.Green(asgName))
-		} else {
-			if !console.AskConfirm(fmt.Sprintf("  > EC2 Auto Scaling Group [%s] already exists.\n  > Do you want to use it?", cc.Green(asgName))) {
-				console.Errorln("  > You can delete the existing EC2 Auto Scaling Group and try again.")
-				return nil
-			}
-		}
-	} else {
-		err = c.awsClient.AutoScaling().CreateAutoScalingGroup(asgName, lcName, subnetIDs, 0, initialCapacity, initialCapacity)
-		if err != nil {
-			console.Errorf("Failed to create EC2 Auto Scaling Group [%s]: %s\n", cc.Red(asgName), err.Error())
-			return nil
-		}
-	}
-
-	// create ECS cluster
-	console.Printf("Creating ECS cluster [%s] ...\n", cc.Green(ecsClusterName))
-	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
-	if ecsCluster != nil && err == nil {
-		console.Printf("  > Existing ECS Cluster [%s] will be used.\n", cc.Green(ecsClusterName))
-	} else {
-		if _, err := c.awsClient.ECS().CreateCluster(ecsClusterName); err != nil {
-			console.Errorf("Failed to create ECS Cluster [$s]: %s\n", cc.Red(ecsClusterName), err.Error())
-			return nil
-		}
-	}
-
-	// create ECS service role (IAM)
-	ecsServiceRoleName := fmt.Sprintf("coldbrew_%s_ecs_service_role", clusterName)
-	console.Printf("Creating IAM Role [%s] for ECS service role ...\n", cc.Green(ecsServiceRoleName))
-	existingRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
-	if existingRole != nil && err == nil {
-		console.Printf("  > Existing IAM Role [%s] will be used.\n", cc.Green(ecsServiceRoleName))
-	} else {
-		_, err := c.createECSServiceRole(ecsServiceRoleName)
-		if err != nil {
-			console.Errorf("Failed to create IAM role [%s]: %s\n", cc.Red(ecsServiceRoleName), err.Error())
-			return nil
-		}
-	}
-
-	console.Printf("Cluster [%s] was created successfully. It can take some time until all new container instances full become available in the cluster.\n", cc.Green(clusterName))
+func (c *Command) exitWithError(err error) error {
+	console.Errorln(cc.Red("Error:"), err.Error())
 	return nil
 }
