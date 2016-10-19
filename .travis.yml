@@ -26,5 +26,6 @@ deploy:
   bucket: files.coldbrewcloud.com
   region: us-west-2
   acl: public_read
+  skip_cleanup: true
   local_dir: bin
   upload-dir: cli
