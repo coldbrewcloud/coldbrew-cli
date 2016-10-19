@@ -3,6 +3,11 @@ language: go
 go:
   - 1.7.1
 
-install: make deps
+install:
+  - wget "https://github.com/Masterminds/glide/releases/download/0.12.3/glide-0.12.3-linux-amd64.tar.gz"
+  - mkdir -p $HOME/bin
+  - tar -vxz -C $HOME/bin --strip=1 -f glide-0.12.3-linux-amd64.tar.gz
+  - export PATH="$HOME/bin:$PATH"
+  - make deps
 
 script: make test
