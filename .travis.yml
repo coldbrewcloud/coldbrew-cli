@@ -3,11 +3,25 @@ language: go
 go:
   - 1.7.1
 
-install:
+before_install:
+  - pip install --user awscli
+  - export PATH=$PATH:$HOME/.local/bin
   - wget "https://github.com/Masterminds/glide/releases/download/v0.12.3/glide-v0.12.3-linux-amd64.tar.gz"
   - mkdir -p $HOME/bin
   - tar -vxz -C $HOME/bin --strip=1 -f glide-v0.12.3-linux-amd64.tar.gz
   - export PATH="$HOME/bin:$PATH"
+
+install:
   - make deps
 
-script: make test
+script:
+  - make build
+
+deploy:
+  provider: s3
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  bucket: files.coldbrewcloud.com
+  acl: public_read
+  local_dir: bin
+  upload-dir: cli/bin
