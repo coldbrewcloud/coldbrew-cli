@@ -88,7 +88,7 @@ func (c *Command) deleteECSServiceRole(roleName string) error {
 	return nil
 }
 
-func (c *Command) deleteFullAccessInstanceProfile(profileName string) error {
+func (c *Command) deleteDefaultInstanceProfile(profileName string) error {
 	if err := c.awsClient.IAM().RemoveRoleFromInstanceProfile(profileName, profileName); err != nil {
 		return fmt.Errorf("Failed to remove IAM Role [%s] from Instance Profile [%s]: %s", profileName, profileName, err.Error())
 	}

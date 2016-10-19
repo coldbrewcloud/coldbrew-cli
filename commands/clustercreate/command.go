@@ -62,36 +62,35 @@ func (c *Command) Run(cfg *config.Config) error {
 	console.Println("Container Instances")
 
 	// instance profile
-	instanceProfileRoleName := strings.TrimSpace(conv.S(c.commandFlags.InstanceProfile))
+	instanceProfileName := strings.TrimSpace(conv.S(c.commandFlags.InstanceProfile))
 	instanceProfileCreated := false
-	instanceProfileRoleARN := ""
-	if instanceProfileRoleName == "" {
-		instanceProfileRoleName = clusters.DefaultInstanceProfileName(clusterName)
+	if instanceProfileName == "" {
+		instanceProfileName = clusters.DefaultInstanceProfileName(clusterName)
 
-		existingInstanceProfileRole, err := c.awsClient.IAM().RetrieveRole(instanceProfileRoleName)
-		if existingInstanceProfileRole != nil && err == nil {
-			if conv.B(c.commandFlags.SkipExisting) {
-				instanceProfileRoleARN = conv.S(existingInstanceProfileRole.Arn)
-			} else {
-				return c.exitWithError(fmt.Errorf("Instance Profile [%s] already exists.", instanceProfileRoleName))
+		existingInstanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
+		if existingInstanceProfile != nil && err == nil {
+			if !conv.B(c.commandFlags.SkipExisting) {
+				return c.exitWithError(fmt.Errorf("Instance Profile [%s] already exists.", instanceProfileName))
 			}
 		} else {
 			var err error
-			instanceProfileRoleARN, err = c.createFullAccessInstanceProfile(instanceProfileRoleName)
+			_, err = c.createDefaultInstanceProfile(instanceProfileName)
 			if err != nil {
-				return c.exitWithError(fmt.Errorf("Failed to create IAM Instance Profile [%s]: %s", instanceProfileRoleName, err.Error()))
+				return c.exitWithError(fmt.Errorf("Failed to create IAM Instance Profile [%s]: %s", instanceProfileName, err.Error()))
 			}
 			instanceProfileCreated = true
 		}
 	} else {
-		instanceProfileRole, err := c.awsClient.IAM().RetrieveRole(instanceProfileRoleName)
+		instanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
 		if err != nil {
 			return c.exitWithError(err)
 		}
-		instanceProfileRoleARN = conv.S(instanceProfileRole.Arn)
+		if instanceProfile == nil {
+			return c.exitWithError(fmt.Errorf("Failed to find Instance Profile [%s].", instanceProfileName))
+		}
 	}
 
-	console.Print(" ", cc.BlackH("Profile"), cc.Green(instanceProfileRoleName), "")
+	console.Print(" ", cc.BlackH("Profile"), cc.Green(instanceProfileName), "")
 	if instanceProfileCreated {
 		console.Println(cc.Yellow("(created)"))
 	} else {
@@ -172,7 +171,7 @@ func (c *Command) Run(cfg *config.Config) error {
 			return c.exitWithError(fmt.Errorf("Launch Configuration [%s] already exists.", lcName))
 		}
 	} else {
-		err := c.awsClient.AutoScaling().CreateLaunchConfiguration(lcName, instanceType, imageID, []string{sgID}, keyPairName, instanceProfileRoleARN, instanceUserData)
+		err := c.awsClient.AutoScaling().CreateLaunchConfiguration(lcName, instanceType, imageID, []string{sgID}, keyPairName, instanceProfileName, instanceUserData)
 		if err != nil {
 			return c.exitWithError(fmt.Errorf("Failed to create EC2 Launch Configuration [%s]: %s", lcName, err.Error()))
 		}

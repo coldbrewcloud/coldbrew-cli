@@ -74,8 +74,8 @@ echo ECS_CLUSTER=%s >> /etc/ecs/ecs.config`, ecsClusterName)
 	return base64.StdEncoding.EncodeToString([]byte(userData))
 }
 
-func (c *Command) createFullAccessInstanceProfile(profileName string) (string, error) {
-	iamRole, err := c.awsClient.IAM().CreateRole(clusters.EC2AssumeRolePolicy, profileName)
+func (c *Command) createDefaultInstanceProfile(profileName string) (string, error) {
+	_, err := c.awsClient.IAM().CreateRole(clusters.EC2AssumeRolePolicy, profileName)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create IAM Role [%s]: %s", profileName, err.Error())
 	}
@@ -94,8 +94,7 @@ func (c *Command) createFullAccessInstanceProfile(profileName string) (string, e
 		return "", fmt.Errorf("Failed to add IAM Role [%s] to IAM Instance Profile [%s]: %s", profileName, profileName, err.Error())
 	}
 
-	//return conv.S(iamInstanceProfile.Arn), nil
-	return conv.S(iamRole.Arn), nil // returns ARN of Role instead of Instance Profile because Launch Config needs Role ARN
+	return conv.S(iamInstanceProfile.Arn), nil
 }
 
 func (c *Command) createECSServiceRole(roleName string) (string, error) {

@@ -54,7 +54,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 	if ecsCluster != nil && conv.S(ecsCluster.Status) != "INACTIVE" {
 		deleteECSCluster = true
-		console.Println(" ", cc.BlackH("ECS Cluster"), cc.Red(ecsClusterName))
+		console.Println(" ", cc.BlackH("ECS Cluster"), cc.Green(ecsClusterName))
 	}
 
 	// ECS service role
@@ -65,7 +65,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 	if ecsServiceRole != nil {
 		deleteECSServiceRole = true
-		console.Println(" ", cc.BlackH("ECS Service Rike"), cc.Red(ecsServiceRoleName))
+		console.Println(" ", cc.BlackH("ECS Service Rike"), cc.Green(ecsServiceRoleName))
 	}
 
 	// launch configuration
@@ -76,7 +76,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 	if launchConfiguration != nil {
 		deleteLaunchConfiguration = true
-		console.Println(" ", cc.BlackH("Launch Config"), cc.Red(lcName))
+		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(lcName))
 	}
 
 	// auto scaling group
@@ -87,7 +87,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 	if autoScalingGroup != nil && utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		deleteAutoScalingGroup = true
-		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Red(asgName))
+		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName))
 	}
 
 	// instance profile
@@ -98,7 +98,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 	if instanceProfile != nil {
 		deleteInstanceProfile = true
-		console.Println(" ", cc.BlackH("Instance Profile"), cc.Red(instanceProfileName))
+		console.Println(" ", cc.BlackH("Instance Profile"), cc.Green(instanceProfileName))
 	}
 
 	// instance security group
@@ -109,7 +109,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 	if securityGroup != nil {
 		deleteInstanceSecurityGroups = true
-		console.Println(" ", cc.BlackH("Instance Security Group"), cc.Red(sgName))
+		console.Println(" ", cc.BlackH("Instance Security Group"), cc.Green(sgName))
 	}
 
 	// confirmation
@@ -119,7 +119,7 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// delete auto scaling group
 	if deleteAutoScalingGroup {
-		console.Printf("Scaling down Auto Scaling Group [%s]... %s\n", asgName, cc.BlackH("(this may take some time)"))
+		console.Printf("Terminating instances in Auto Scaling Group [%s]... %s\n", cc.Red(asgName), cc.BlackH("(this may take some time)"))
 
 		if err := c.scaleDownAutoScalingGroup(autoScalingGroup); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
@@ -128,7 +128,7 @@ func (c *Command) Run(cfg *config.Config) error {
 				return c.exitWithError(err)
 			}
 		} else {
-			console.Printf("Deleting Auto Scaling Group [%s]... %s\n", asgName, cc.BlackH("(this may take some time)"))
+			console.Printf("Deleting Auto Scaling Group [%s]... %s\n", cc.Red(asgName), cc.BlackH("(this may take some time)"))
 			if err := c.awsClient.AutoScaling().DeleteAutoScalingGroup(asgName, true); err != nil {
 				if conv.B(c.commandFlags.ContinueOnError) {
 					console.Errorln(cc.Red("Error: "), err.Error())
@@ -141,7 +141,7 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// delete launch configuration
 	if deleteLaunchConfiguration {
-		console.Printf("Deleting Launch Configuration [%s]...\n", lcName)
+		console.Printf("Deleting Launch Configuration [%s]...\n", cc.Red(lcName))
 
 		if err := c.awsClient.AutoScaling().DeleteLaunchConfiguration(lcName); err != nil {
 			err = fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error())
@@ -155,9 +155,9 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// delete instance profile
 	if deleteInstanceProfile {
-		console.Printf("Deleting Instance Profile [%s]...\n", instanceProfileName)
+		console.Printf("Deleting Instance Profile [%s]...\n", cc.Red(instanceProfileName))
 
-		if err := c.deleteFullAccessInstanceProfile(instanceProfileName); err != nil {
+		if err := c.deleteDefaultInstanceProfile(instanceProfileName); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
@@ -168,7 +168,7 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// delete instance security groups
 	if deleteInstanceSecurityGroups {
-		console.Printf("Deleting Instance Security Group [%s]...\n", sgName)
+		console.Printf("Deleting Instance Security Group [%s]...\n", cc.Red(sgName))
 
 		if err := c.awsClient.EC2().DeleteSecurityGroup(conv.S(securityGroup.GroupId)); err != nil {
 			err = fmt.Errorf("Failed to delete Security Group [%s]: %s", sgName, err.Error())
@@ -182,7 +182,7 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// delete ECS cluster
 	if deleteECSCluster {
-		console.Printf("Deleting ECS Cluster [%s]...\n", ecsClusterName)
+		console.Printf("Deleting ECS Cluster [%s]...\n", cc.Red(ecsClusterName))
 
 		if err := c.awsClient.ECS().DeleteCluster(ecsClusterName); err != nil {
 			err = fmt.Errorf("Failed to delete ECS Cluster [%s]: %s", ecsServiceRoleName, err.Error())
@@ -196,7 +196,7 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// delete ECS service role
 	if deleteECSServiceRole {
-		console.Printf("Deleting ECS Service Role [%s]...\n", ecsServiceRoleName)
+		console.Printf("Deleting ECS Service Role [%s]...\n", cc.Red(ecsServiceRoleName))
 
 		if err := c.deleteECSServiceRole(ecsServiceRoleName); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
