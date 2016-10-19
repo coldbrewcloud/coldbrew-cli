@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"time"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
@@ -107,4 +109,20 @@ func (c *Command) createECSServiceRole(roleName string) (string, error) {
 	}
 
 	return conv.S(iamRole.Arn), nil
+}
+
+func (c *Command) waitAutoScalingGroupDeletion(autoScalingGroupName string) error {
+	maxRetries := 60
+	for i := 0; i < maxRetries; i++ {
+		autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
+		if err != nil {
+			return fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
+		}
+		if autoScalingGroup == nil {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+	return nil
 }

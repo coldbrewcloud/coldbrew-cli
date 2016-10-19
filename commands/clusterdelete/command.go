@@ -38,7 +38,7 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
 
-	console.Println("Collecting resources to delete...")
+	console.Println("Identifying resources to delete...")
 	deleteECSCluster := false
 	deleteECSServiceRole := false
 	deleteInstanceProfile := false
@@ -110,6 +110,12 @@ func (c *Command) Run(cfg *config.Config) error {
 	if securityGroup != nil {
 		deleteInstanceSecurityGroups = true
 		console.Println(" ", cc.BlackH("Instance Security Group"), cc.Green(sgName))
+	}
+
+	if !deleteECSServiceRole && !deleteECSCluster && !deleteLaunchConfiguration && !deleteAutoScalingGroup &&
+		!deleteInstanceProfile && !deleteInstanceSecurityGroups {
+		console.Println("Looks like everything's already cleaned up.")
+		return nil
 	}
 
 	// confirmation

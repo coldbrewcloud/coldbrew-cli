@@ -9,6 +9,7 @@ type Flags struct {
 	VPC             *string `json:"vpc"`
 	InstanceProfile *string `json:"instance_profile"`
 	SkipExisting    *bool   `json:"skip-existing"`
+	ForceCreate     *bool   `json:"force"`
 }
 
 func NewFlags(kc *kingpin.CmdClause) *Flags {
@@ -19,5 +20,6 @@ func NewFlags(kc *kingpin.CmdClause) *Flags {
 		VPC:             kc.Flag("vpc", "VPC ID").String(),
 		InstanceProfile: kc.Flag("instance-profile", "IAM role name for container instances").String(),
 		SkipExisting:    kc.Flag("skip-existing", "Skip existing resources").Short('S').Default("false").Bool(),
+		ForceCreate:     kc.Flag("force", "Create all resource with no confirmation").Short('F').Default("false").Bool(),
 	}
 }
