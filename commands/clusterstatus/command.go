@@ -15,10 +15,6 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-const (
-	defaultInstanceType = "t2.micro"
-)
-
 type Command struct {
 	globalFlags    *flags.GlobalFlags
 	commandFlags   *Flags
@@ -62,35 +58,35 @@ func (c *Command) Run(cfg *config.Config) error {
 	showContainerInstanceDetails := false
 
 	// launch configuration
-	lcName := clusters.DefaultLaunchConfigurationName(clusterName)
-	launchConfiguration, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(lcName)
+	launchConfigName := clusters.DefaultLaunchConfigurationName(clusterName)
+	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Launch Configuration [%s]: %s", lcName, err.Error()))
+		return c.exitWithError(fmt.Errorf("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error()))
 	}
-	if launchConfiguration == nil {
-		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(lcName), cc.Red("(not found)"))
+	if launchConfig == nil {
+		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(launchConfigName), cc.Red("(not found)"))
 	} else {
-		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(lcName))
+		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(launchConfigName))
 		showContainerInstanceDetails = true
 	}
 
 	// auto scaling group
-	asgName := clusters.DefaultAutoScalingGroupName(clusterName)
-	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
+	autoScalingGroupName := clusters.DefaultAutoScalingGroupName(clusterName)
+	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error()))
+		return c.exitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
 	}
 	if autoScalingGroup == nil {
-		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName), cc.Red("(not found)"))
+		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(autoScalingGroupName), cc.Red("(not found)"))
 	} else if utils.IsBlank(conv.S(autoScalingGroup.Status)) {
-		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName))
+		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(autoScalingGroupName))
 		console.Println(" ", cc.BlackH("Instances"),
 			cc.BlackH("Current"), cc.Green(conv.I64S(int64(len(autoScalingGroup.Instances)))),
 			cc.BlackH("Desired"), cc.Green(conv.I64S(conv.I64(autoScalingGroup.DesiredCapacity))),
 			cc.BlackH("Min"), cc.Green(conv.I64S(conv.I64(autoScalingGroup.MinSize))),
 			cc.BlackH("Max"), cc.Green(conv.I64S(conv.I64(autoScalingGroup.MaxSize))))
 	} else {
-		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName), cc.Red("(deleting)"))
+		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(autoScalingGroupName), cc.Red("(deleting)"))
 	}
 
 	// ECS
@@ -136,15 +132,15 @@ func (c *Command) Run(cfg *config.Config) error {
 	if showContainerInstanceDetails {
 		console.Println("Container Instances")
 
-		instanceProfileARN := conv.S(launchConfiguration.IamInstanceProfile)
+		instanceProfileARN := conv.S(launchConfig.IamInstanceProfile)
 		console.Println(" ", cc.BlackH("Profile"), cc.Green(aws.GetIAMInstanceProfileNameFromARN(instanceProfileARN)))
 
-		console.Println(" ", cc.BlackH("Type"), cc.Green(conv.S(launchConfiguration.InstanceType)))
-		console.Println(" ", cc.BlackH("Image"), cc.Green(conv.S(launchConfiguration.ImageId)))
-		console.Println(" ", cc.BlackH("Type"), cc.Green(conv.S(launchConfiguration.KeyName)))
+		console.Println(" ", cc.BlackH("Type"), cc.Green(conv.S(launchConfig.InstanceType)))
+		console.Println(" ", cc.BlackH("Image"), cc.Green(conv.S(launchConfig.ImageId)))
+		console.Println(" ", cc.BlackH("Type"), cc.Green(conv.S(launchConfig.KeyName)))
 
 		securityGroupIDs := []string{}
-		for _, sg := range launchConfiguration.SecurityGroups {
+		for _, sg := range launchConfig.SecurityGroups {
 			securityGroupIDs = append(securityGroupIDs, conv.S(sg))
 		}
 		securityGroups, err := c.awsClient.EC2().RetrieveSecurityGroups(securityGroupIDs)

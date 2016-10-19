@@ -35,3 +35,7 @@ func DefaultInstnaceSecurityGroupName(clusterName string) string {
 func DefaultECSServiceRoleName(clusterName string) string {
 	return fmt.Sprintf("%s%s_ecs_service_role", defaultPrefix, clusterName)
 }
+
+func DefaultContainerInstanceType() string {
+	return "t2.micro"
+}

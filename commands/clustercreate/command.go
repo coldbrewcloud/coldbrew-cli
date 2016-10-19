@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 	"time"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
@@ -17,10 +16,6 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 	"github.com/d5/cc"
 	"gopkg.in/alecthomas/kingpin.v2"
-)
-
-const (
-	defaultInstanceType = "t2.micro"
 )
 
 type Command struct {
@@ -83,25 +78,25 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 
 	// launch configuration
-	lcName := clusters.DefaultLaunchConfigurationName(clusterName)
-	launchConfiguration, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(lcName)
+	launchConfigName := clusters.DefaultLaunchConfigurationName(clusterName)
+	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error()))
+		return c.exitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", launchConfigName, err.Error()))
 	}
-	if launchConfiguration == nil {
+	if launchConfig == nil {
 		createLaunchConfiguration = true
-		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(lcName))
+		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(launchConfigName))
 	}
 
 	// auto scaling group
-	asgName := clusters.DefaultAutoScalingGroupName(clusterName)
-	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
+	autoScalingGroupName := clusters.DefaultAutoScalingGroupName(clusterName)
+	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error()))
+		return c.exitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
 	}
 	if autoScalingGroup == nil || !utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		createAutoScalingGroup = true
-		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName))
+		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(autoScalingGroupName))
 	}
 
 	// instance profile
@@ -120,17 +115,17 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 
 	// instance security group
-	sgName := clusters.DefaultInstnaceSecurityGroupName(clusterName)
-	securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(sgName)
+	instanceSecurityGroupName := clusters.DefaultInstnaceSecurityGroupName(clusterName)
+	instanceSecurityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(instanceSecurityGroupName)
 	instanceSecurityGroupID := ""
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", sgName, err.Error()))
+		return c.exitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", instanceSecurityGroupName, err.Error()))
 	}
-	if securityGroup == nil {
+	if instanceSecurityGroup == nil {
 		createInstanceSecurityGroup = true
-		console.Println(" ", cc.BlackH("Instance Security Group"), cc.Green(sgName))
+		console.Println(" ", cc.BlackH("Instance Security Group"), cc.Green(instanceSecurityGroupName))
 	} else {
-		instanceSecurityGroupID = conv.S(securityGroup.GroupId)
+		instanceSecurityGroupID = conv.S(instanceSecurityGroup.GroupId)
 	}
 
 	if !createECSServiceRole && !createECSCluster && !createLaunchConfiguration && !createAutoScalingGroup &&
@@ -155,21 +150,21 @@ func (c *Command) Run(cfg *config.Config) error {
 
 	// create instance security group
 	if createInstanceSecurityGroup {
-		console.Printf("Creating Security Group [%s]...\n", cc.Green(sgName))
+		console.Printf("Creating Security Group [%s]...\n", cc.Green(instanceSecurityGroupName))
 
 		var err error
-		instanceSecurityGroupID, err = c.awsClient.EC2().CreateSecurityGroup(sgName, sgName, vpcID)
+		instanceSecurityGroupID, err = c.awsClient.EC2().CreateSecurityGroup(instanceSecurityGroupName, instanceSecurityGroupName, vpcID)
 		if err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create EC2 Security Group [%s] for container instances: %s", sgName, err.Error()))
+			return c.exitWithError(fmt.Errorf("Failed to create EC2 Security Group [%s] for container instances: %s", instanceSecurityGroupName, err.Error()))
 		}
 		if err := c.awsClient.EC2().AddInboundToSecurityGroup(instanceSecurityGroupID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to add SSH inbound rule to Security Group [%s]: %s", sgName, err.Error()))
+			return c.exitWithError(fmt.Errorf("Failed to add SSH inbound rule to Security Group [%s]: %s", instanceSecurityGroupName, err.Error()))
 		}
 	}
 
 	// create launch configuration
 	if createLaunchConfiguration {
-		console.Printf("Creating Launch Configuration [%s]...\n", cc.Green(lcName))
+		console.Printf("Creating Launch Configuration [%s]...\n", cc.Green(launchConfigName))
 
 		// key pair
 		keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
@@ -184,7 +179,7 @@ func (c *Command) Run(cfg *config.Config) error {
 		// container instance type
 		instanceType := strings.TrimSpace(conv.S(c.commandFlags.InstanceType))
 		if instanceType == "" {
-			instanceType = console.AskQuestion("Enter instance type", defaultInstanceType)
+			instanceType = console.AskQuestion("Enter instance type", clusters.DefaultContainerInstanceType())
 		}
 
 		// container instance image ID
@@ -199,7 +194,7 @@ func (c *Command) Run(cfg *config.Config) error {
 		// So here we retry up to 10 times just to be safe.
 		var lastErr error
 		for i := 0; i < 10; i++ {
-			err := c.awsClient.AutoScaling().CreateLaunchConfiguration(lcName, instanceType, imageID, []string{instanceSecurityGroupID}, keyPairName, instanceProfileName, instanceUserData)
+			err := c.awsClient.AutoScaling().CreateLaunchConfiguration(launchConfigName, instanceType, imageID, []string{instanceSecurityGroupID}, keyPairName, instanceProfileName, instanceUserData)
 			if err != nil {
 				lastErr = err
 			} else {
@@ -210,26 +205,26 @@ func (c *Command) Run(cfg *config.Config) error {
 			time.Sleep(1 * time.Second)
 		}
 		if lastErr != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create EC2 Launch Configuration [%s]: %s", lcName, lastErr.Error()))
+			return c.exitWithError(fmt.Errorf("Failed to create EC2 Launch Configuration [%s]: %s", launchConfigName, lastErr.Error()))
 		}
 	}
 
 	// create auto scaling group
 	if createAutoScalingGroup {
-		console.Printf("Creating Auto Scaling Group [%s]...\n", cc.Green(asgName))
+		console.Printf("Creating Auto Scaling Group [%s]...\n", cc.Green(autoScalingGroupName))
 
 		// if existing auto scaling group is currently pending delete, wait a bit so it gets fully deleted
 		if autoScalingGroup != nil && !utils.IsBlank(conv.S(autoScalingGroup.Status)) {
-			if err := c.waitAutoScalingGroupDeletion(asgName); err != nil {
+			if err := c.waitAutoScalingGroupDeletion(autoScalingGroupName); err != nil {
 				return c.exitWithError(err)
 			}
 		}
 
 		initialCapacity := conv.U16(c.commandFlags.InitialCapacity)
 
-		err = c.awsClient.AutoScaling().CreateAutoScalingGroup(asgName, lcName, subnetIDs, 0, initialCapacity, initialCapacity)
+		err = c.awsClient.AutoScaling().CreateAutoScalingGroup(autoScalingGroupName, launchConfigName, subnetIDs, 0, initialCapacity, initialCapacity)
 		if err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create EC2 Auto Scaling Group [%s]: %s", asgName, err.Error()))
+			return c.exitWithError(fmt.Errorf("Failed to create EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
 		}
 	}
 
