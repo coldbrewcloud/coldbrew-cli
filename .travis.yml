@@ -17,12 +17,14 @@ install:
 
 script:
   - make build
+  - ls -la .
 
 deploy:
   provider: s3
   access_key_id: $AWS_ACCESS_KEY_ID
   secret_access_key: $AWS_SECRET_ACCESS_KEY
   bucket: files.coldbrewcloud.com
+  region: us-west-2
   acl: public_read
   local_dir: bin
-  upload-dir: cli/bin
+  upload-dir: cli
