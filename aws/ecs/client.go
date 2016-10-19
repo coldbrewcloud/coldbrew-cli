@@ -60,6 +60,16 @@ func (c *Client) CreateCluster(clusterName string) (*_ecs.Cluster, error) {
 	return res.Cluster, nil
 }
 
+func (c *Client) DeleteCluster(clusterName string) error {
+	params := &_ecs.DeleteClusterInput{
+		Cluster: _aws.String(clusterName),
+	}
+
+	_, err := c.svc.DeleteCluster(params)
+
+	return err
+}
+
 func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerName string, cpu, memory uint64, envs map[string]string, portMappings []PortMapping, cloudWatchLogs bool) (*_ecs.TaskDefinition, error) {
 	if taskDefinitionName == "" {
 		return nil, errors.New("taskDefinitionName is empty")

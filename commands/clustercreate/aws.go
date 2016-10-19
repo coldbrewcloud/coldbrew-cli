@@ -1,21 +1,49 @@
 package clustercreate
 
 import (
-	"fmt"
-
 	"encoding/base64"
+	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
+	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
-const (
-	ec2AssumeRolePolicy = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action": "sts:AssumeRole"}]}`
-	ecsAssumeRolePolicy = `{"Version":"2008-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs.amazonaws.com"},"Action": "sts:AssumeRole"}]}`
+func (c *Command) getAWSNetwork() (string, string, []string, error) {
+	regionName := strings.TrimSpace(conv.S(c.globalFlags.AWSRegion))
 
-	administratorAccessPolicyARN = "arn:aws:iam::aws:policy/AdministratorAccess"
-	ecsServiceRolePolicyARN      = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole"
-)
+	// VPC ID
+	vpcID := strings.TrimSpace(conv.S(c.commandFlags.VPC))
+	if vpcID == "" {
+		// find/use default VPC for the account
+		defaultVPC, err := c.awsClient.EC2().RetrieveDefaultVPC()
+		if err != nil {
+			return "", "", nil, fmt.Errorf("Failed to retrieve default VPC: %s", err.Error())
+		} else if defaultVPC == nil {
+			return "", "", nil, errors.New("No default VPC configured")
+		}
+
+		vpcID = conv.S(defaultVPC.VpcId)
+	} else {
+		vpc, err := c.awsClient.EC2().RetrieveVPC(vpcID)
+		if err != nil {
+			return "", "", nil, fmt.Errorf("Failed to retrieve VPC [%s] info: %s", vpcID, err.Error())
+		}
+		if vpc == nil {
+			return "", "", nil, fmt.Errorf("VPC [%s] not found", vpcID)
+		}
+	}
+
+	// Subnet IDs
+	subnetIDs, err := c.awsClient.EC2().ListVPCSubnets(vpcID)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("Failed to list subnets of VPC [%s]: %s", vpcID, err.Error())
+	}
+
+	return regionName, vpcID, subnetIDs, nil
+}
 
 func (c *Command) getClusterImageID(region string) string {
 	switch region {
@@ -47,11 +75,11 @@ echo ECS_CLUSTER=%s >> /etc/ecs/ecs.config`, ecsClusterName)
 }
 
 func (c *Command) createFullAccessInstanceProfile(profileName string) (string, error) {
-	_, err := c.awsClient.IAM().CreateRole(ec2AssumeRolePolicy, profileName)
+	iamRole, err := c.awsClient.IAM().CreateRole(clusters.EC2AssumeRolePolicy, profileName)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create IAM Role [%s]: %s", profileName, err.Error())
 	}
-	if err := c.awsClient.IAM().AttachRolePolicy(administratorAccessPolicyARN, profileName); err != nil {
+	if err := c.awsClient.IAM().AttachRolePolicy(clusters.AdministratorAccessPolicyARN, profileName); err != nil {
 		return "", fmt.Errorf("Failed to attach policy to IAM Role [%s]: %s", profileName, err.Error())
 	}
 
@@ -66,15 +94,16 @@ func (c *Command) createFullAccessInstanceProfile(profileName string) (string, e
 		return "", fmt.Errorf("Failed to add IAM Role [%s] to IAM Instance Profile [%s]: %s", profileName, profileName, err.Error())
 	}
 
-	return conv.S(iamInstanceProfile.Arn), nil
+	//return conv.S(iamInstanceProfile.Arn), nil
+	return conv.S(iamRole.Arn), nil // returns ARN of Role instead of Instance Profile because Launch Config needs Role ARN
 }
 
 func (c *Command) createECSServiceRole(roleName string) (string, error) {
-	iamRole, err := c.awsClient.IAM().CreateRole(ecsAssumeRolePolicy, roleName)
+	iamRole, err := c.awsClient.IAM().CreateRole(clusters.ECSAssumeRolePolicy, roleName)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create IAM Role [%s]: %s", roleName, err.Error())
 	}
-	if err := c.awsClient.IAM().AttachRolePolicy(ecsServiceRolePolicyARN, roleName); err != nil {
+	if err := c.awsClient.IAM().AttachRolePolicy(clusters.ECSServiceRolePolicyARN, roleName); err != nil {
 		return "", fmt.Errorf("Failed to attach policy to IAM Role [%s]: %s", roleName, err.Error())
 	}
 

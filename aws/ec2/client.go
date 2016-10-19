@@ -124,8 +124,15 @@ func (c *Client) RemoveInboundToSecurityGroup(securityGroupID, protocol string, 
 }
 
 func (c *Client) RetrieveSecurityGroup(id string) (*_ec2.SecurityGroup, error) {
+	// NOTE: used Filter instead of GroupIds attribute because GroupIds
+	// returns error when it cannot find the matching security groups.
 	params := &_ec2.DescribeSecurityGroupsInput{
-		GroupIds: _aws.StringSlice([]string{id}),
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("group-id"),
+				Values: _aws.StringSlice([]string{id}),
+			},
+		},
 	}
 
 	res, err := c.svc.DescribeSecurityGroups(params)
@@ -140,9 +147,36 @@ func (c *Client) RetrieveSecurityGroup(id string) (*_ec2.SecurityGroup, error) {
 	}
 }
 
-func (c *Client) RetrieveSecurityGroupByName(name string) (*_ec2.SecurityGroup, error) {
+func (c *Client) RetrieveSecurityGroups(securityGroupIDs []string) ([]*_ec2.SecurityGroup, error) {
+	// NOTE: used Filter instead of GroupIds attribute because GroupIds
+	// returns error when it cannot find the matching security groups.
 	params := &_ec2.DescribeSecurityGroupsInput{
-		GroupNames: _aws.StringSlice([]string{name}),
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("group-id"),
+				Values: _aws.StringSlice(securityGroupIDs),
+			},
+		},
+	}
+
+	res, err := c.svc.DescribeSecurityGroups(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.SecurityGroups, nil
+}
+
+func (c *Client) RetrieveSecurityGroupByName(name string) (*_ec2.SecurityGroup, error) {
+	// NOTE: used Filter instead of GroupNames attribute because GroupNames
+	// returns error when it cannot find the matching security groups.
+	params := &_ec2.DescribeSecurityGroupsInput{
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("group-name"),
+				Values: _aws.StringSlice([]string{name}),
+			},
+		},
 	}
 
 	res, err := c.svc.DescribeSecurityGroups(params)
@@ -155,6 +189,16 @@ func (c *Client) RetrieveSecurityGroupByName(name string) (*_ec2.SecurityGroup, 
 	} else {
 		return nil, nil
 	}
+}
+
+func (c *Client) DeleteSecurityGroup(securityGroupID string) error {
+	params := &_ec2.DeleteSecurityGroupInput{
+		GroupId: _aws.String(securityGroupID),
+	}
+
+	_, err := c.svc.DeleteSecurityGroup(params)
+
+	return err
 }
 
 func (c *Client) CreateInstances(instanceType, imageID string, instanceCount uint16, securityGroupIDs []string, keyPairName, subnetID, iamInstanceProfileName, userData string) ([]*_ec2.Instance, error) {

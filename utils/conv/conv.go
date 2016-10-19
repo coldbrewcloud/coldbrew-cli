@@ -1,5 +1,7 @@
 package conv
 
+import "strconv"
+
 func SP(v string) *string {
 	p := v
 	return &p
@@ -41,4 +43,15 @@ func B(p *bool) bool {
 		return false
 	}
 	return *p
+}
+
+func I64(p *int64) int64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func I64S(v int64) string {
+	return strconv.FormatInt(v, 10)
 }

@@ -9,6 +9,8 @@ import (
 
 	"github.com/coldbrewcloud/coldbrew-cli/commands"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clustercreate"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterdelete"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterstatus"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/deploy"
 	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
@@ -47,6 +49,16 @@ func main() {
 		clusterCreateCommand := &clustercreate.Command{}
 		kpClusterCreateCommand := clusterCreateCommand.Init(kingpinApp, globalFlags)
 		cmds[kpClusterCreateCommand.FullCommand()] = clusterCreateCommand
+
+		// cluster-status
+		clusterStatusCommand := &clusterstatus.Command{}
+		kpClusterStatusCommand := clusterStatusCommand.Init(kingpinApp, globalFlags)
+		cmds[kpClusterStatusCommand.FullCommand()] = clusterStatusCommand
+
+		// cluster-delete
+		clusterDeleteCommand := &clusterdelete.Command{}
+		kpClusterDeleteCommand := clusterDeleteCommand.Init(kingpinApp, globalFlags)
+		cmds[kpClusterDeleteCommand.FullCommand()] = clusterDeleteCommand
 	}
 
 	// parse CLI inputs

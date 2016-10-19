@@ -126,6 +126,17 @@ func (c *Client) DetachRolePolicy(policyARN, roleName string) error {
 	return err
 }
 
+func (c *Client) DeleteRolePolicy(policyName, roleName string) error {
+	params := &_iam.DeleteRolePolicyInput{
+		PolicyName: _aws.String(policyName),
+		RoleName:   _aws.String(roleName),
+	}
+
+	_, err := c.svc.DeleteRolePolicy(params)
+
+	return err
+}
+
 func (c *Client) DeleteRole(roleName string) error {
 	params := &_iam.DeleteRoleInput{
 		RoleName: _aws.String(roleName),
@@ -164,6 +175,17 @@ func (c *Client) AddRoleToInstanceProfile(profileName, roleName string) error {
 	return err
 }
 
+func (c *Client) RemoveRoleFromInstanceProfile(profileName, roleName string) error {
+	params := &_iam.RemoveRoleFromInstanceProfileInput{
+		InstanceProfileName: _aws.String(profileName),
+		RoleName:            _aws.String(roleName),
+	}
+
+	_, err := c.svc.RemoveRoleFromInstanceProfile(params)
+
+	return err
+}
+
 func (c *Client) RetrieveInstanceProfile(profileName string) (*_iam.InstanceProfile, error) {
 	params := &_iam.GetInstanceProfileInput{
 		InstanceProfileName: _aws.String(profileName),
@@ -171,8 +193,23 @@ func (c *Client) RetrieveInstanceProfile(profileName string) (*_iam.InstanceProf
 
 	res, err := c.svc.GetInstanceProfile(params)
 	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == "NoSuchEntity" {
+				return nil, nil // instance profile not found
+			}
+		}
 		return nil, err
 	}
 
 	return res.InstanceProfile, nil
+}
+
+func (c *Client) DeleteInstanceProfile(profileName string) error {
+	params := &_iam.DeleteInstanceProfileInput{
+		InstanceProfileName: _aws.String(profileName),
+	}
+
+	_, err := c.svc.DeleteInstanceProfile(params)
+
+	return err
 }

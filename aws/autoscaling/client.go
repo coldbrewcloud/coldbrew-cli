@@ -54,6 +54,16 @@ func (c *Client) RetrieveLaunchConfiguration(launchConfigurationName string) (*_
 	return nil, nil
 }
 
+func (c *Client) DeleteLaunchConfiguration(launchConfigurationName string) error {
+	params := &_autoscaling.DeleteLaunchConfigurationInput{
+		LaunchConfigurationName: _aws.String(launchConfigurationName),
+	}
+
+	_, err := c.svc.DeleteLaunchConfiguration(params)
+
+	return err
+}
+
 func (c *Client) CreateAutoScalingGroup(autoScalingGroupName, launchConfigurationName string, subnetIDs []string, minCapacity, maxCapacity, initialCapacity uint16) error {
 	params := &_autoscaling.CreateAutoScalingGroupInput{
 		AutoScalingGroupName:    _aws.String(autoScalingGroupName),
@@ -86,4 +96,26 @@ func (c *Client) RetrieveAutoScalingGroup(autoScalingGroupName string) (*_autosc
 	}
 
 	return nil, nil
+}
+
+func (c *Client) SetAutoScalingGroupDesiredCapacity(autoScalingGroupName string, desiredCapacity uint16) error {
+	params := &_autoscaling.SetDesiredCapacityInput{
+		AutoScalingGroupName: _aws.String(autoScalingGroupName),
+		DesiredCapacity:      _aws.Int64(int64(desiredCapacity)),
+	}
+
+	_, err := c.svc.SetDesiredCapacity(params)
+
+	return err
+}
+
+func (c *Client) DeleteAutoScalingGroup(autoScalingGroupName string, forceDelete bool) error {
+	params := &_autoscaling.DeleteAutoScalingGroupInput{
+		AutoScalingGroupName: _aws.String(autoScalingGroupName),
+		ForceDelete:          _aws.Bool(forceDelete),
+	}
+
+	_, err := c.svc.DeleteAutoScalingGroup(params)
+
+	return err
 }
