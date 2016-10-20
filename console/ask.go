@@ -4,15 +4,13 @@ import (
 	"bufio"
 	"os"
 	"strings"
-
-	"github.com/d5/cc"
 )
 
 func AskConfirm(message string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		stdout("%s %s: ", cc.Blue(message), "[y/N]")
+		stdout("%s %s: ", message, "[y/N]")
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -32,7 +30,7 @@ func AskConfirm(message string) bool {
 func AskQuestion(message, defaultValue string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	stdout("%s %s: ", cc.Blue(message), "["+defaultValue+"]")
+	stdout("%s %s: ", message, "["+defaultValue+"]")
 
 	response, err := reader.ReadString('\n')
 	if err != nil {

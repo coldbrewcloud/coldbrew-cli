@@ -6,7 +6,6 @@ type Flags struct {
 	InstanceType    *string `json:"instance_type"`
 	InitialCapacity *uint16 `json:"initial_capacity"`
 	KeyPairName     *string `json:"keypair_name"`
-	VPC             *string `json:"vpc"`
 	InstanceProfile *string `json:"instance_profile"`
 	ForceCreate     *bool   `json:"force"`
 }
@@ -14,10 +13,9 @@ type Flags struct {
 func NewFlags(kc *kingpin.CmdClause) *Flags {
 	return &Flags{
 		InstanceType:    kc.Flag("instance-type", "Container instance type").String(),
-		InitialCapacity: kc.Flag("initial-capacity", "Initial number of container instances").Default("1").Uint16(),
+		InitialCapacity: kc.Flag("instance-count", "Initial number of container instances").Default("1").Uint16(),
 		KeyPairName:     kc.Flag("key", "EC2 keypair name").Required().String(),
-		VPC:             kc.Flag("vpc", "VPC ID").String(),
-		InstanceProfile: kc.Flag("instance-profile", "IAM role name for container instances").String(),
+		InstanceProfile: kc.Flag("instance-profile", "IAM instance profile name for container instances").String(),
 		ForceCreate:     kc.Flag("force", "Create all resource with no confirmation").Short('F').Default("false").Bool(),
 	}
 }

@@ -28,7 +28,7 @@ func DefaultInstanceProfileName(clusterName string) string {
 	return fmt.Sprintf("%s%s_instance_profile", defaultPrefix, clusterName)
 }
 
-func DefaultInstnaceSecurityGroupName(clusterName string) string {
+func DefaultInstanceSecurityGroupName(clusterName string) string {
 	return fmt.Sprintf("%s%s_instance_sg", defaultPrefix, clusterName)
 }
 

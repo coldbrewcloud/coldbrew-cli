@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
-	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
@@ -33,8 +32,8 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 	return cmd
 }
 
-func (c *Command) Run(cfg *config.Config) error {
-	c.awsClient = aws.NewClient(conv.S(c.globalFlags.AWSRegion), conv.S(c.globalFlags.AWSAccessKey), conv.S(c.globalFlags.AWSSecretKey))
+func (c *Command) Run() error {
+	c.awsClient = c.globalFlags.GetAWSClient()
 
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
 
@@ -102,7 +101,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 
 	// instance security group
-	sgName := clusters.DefaultInstnaceSecurityGroupName(clusterName)
+	sgName := clusters.DefaultInstanceSecurityGroupName(clusterName)
 	securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(sgName)
 	if err != nil {
 		return c.exitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", sgName, err.Error()))

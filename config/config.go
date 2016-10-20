@@ -1,51 +1,40 @@
 package config
 
 type Config struct {
-	Name        string            `json:"name" yaml:"name"`
-	ClusterName string            `json:"cluster" yaml:"cluster"`
-	Port        uint16            `json:"port" yaml:"port"`
-	CPU         float64           `json:"cpu" yaml:"cpu"`
-	Memory      string            `json:"memory" yaml:"memory"`
-	Units       uint16            `json:"units" yaml:"units"`
-	Env         map[string]string `json:"env" yaml:"env"`
-	//Logging      *ConfigLogging      `json:"logging" yaml:"logging"`
-	LoadBalancer *ConfigLoadBalancer `json:"load_balancer" yaml:"load_balancer"`
-	AWS          *ConfigAWS          `json:"aws" yaml:"aws"`
-	Docker       *ConfigDocker       `json:"docker" yaml:"docker"`
-}
-
-type ConfigLogging struct {
-	Type string `json:"type" yaml:"type"`
+	Name         string              `json:"name,omitempty" yaml:"name,omitempty"`
+	ClusterName  string              `json:"cluster,omitempty" yaml:"cluster,omitempty"`
+	Port         uint16              `json:"port,omitempty" yaml:"port,omitempty"`
+	CPU          float64             `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	Memory       string              `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Units        uint16              `json:"units,omitempty" yaml:"units,omitempty"`
+	Env          map[string]string   `json:"env,omitempty" yaml:"env,omitempty"`
+	LoadBalancer *ConfigLoadBalancer `json:"load_balancer,omitempty" yaml:"load_balancer,omitempty"`
+	AWS          *ConfigAWS          `json:"aws,omitempty" yaml:"aws,omitempty"`
+	Docker       *ConfigDocker       `json:"docker,omitempty" yaml:"docker,omitempty"`
 }
 
 type ConfigLoadBalancer struct {
-	Name          string                         `json:"name" yaml:"name"`
-	IsHTTPS       bool                           `json:"https" yaml:"https"`
-	Port          uint16                         `json:"port" yaml:"port"`
-	SecurityGroup string                         `json:"security_group" yaml:"security_group"`
-	HealthCheck   *ConfigLoadBalancerHealthCheck `json:"health_check" yaml:"health_check"`
+	IsHTTPS     bool                           `json:"https,omitempty" yaml:"https,omitempty"`
+	Port        uint16                         `json:"port,omitempty" yaml:"port,omitempty"`
+	HealthCheck *ConfigLoadBalancerHealthCheck `json:"health_check,omitempty" yaml:"health_check,omitempty"`
 }
 
 type ConfigLoadBalancerHealthCheck struct {
-	Interval       string `json:"interval" yaml:"interval"`
-	Path           string `json:"path" yaml:"path"`
-	Status         string `json:"status" yaml:"status"`
-	Timeout        string `json:"timeout" yaml:"timeout"`
-	HealthyLimit   uint16 `json:"healthy_limit" yaml:"healthy_limit"`
-	UnhealthyLimit uint16 `json:"unhealthy_limit" yaml:"unhealthy_limit"`
+	Interval       string `json:"interval,omitempty" yaml:"interval,omitempty"`
+	Path           string `json:"path,omitempty" yaml:"path,omitempty"`
+	Status         string `json:"status,omitempty" yaml:"status,omitempty"`
+	Timeout        string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	HealthyLimit   uint16 `json:"healthy_limit,omitempty" yaml:"healthy_limit,omitempty"`
+	UnhealthyLimit uint16 `json:"unhealthy_limit,omitempty" yaml:"unhealthy_limit,omitempty"`
 }
 
 type ConfigAWS struct {
-	VPC string `json:"vpc" yaml:"vpc"`
-}
-
-type ConfigAWSContainerInstances struct {
-	SecurityGroup string `json:"security_group" yaml:"security_group"`
-	ImageID       string `json:"image_id" yaml:"image_id"`
-	KeyPair       string `json:"keypair" yaml:"keypair"`
-	InstanceType  string `json:"instance_type" yaml:"instance_type"`
+	ELBLoadBalancerName string `json:"elb_lb_name,omitempty" yaml:"elb_lb_name,omitempty"`
+	ELBTargetName       string `json:"elb_target_name,omitempty" yaml:"elb_target_name,omitempty"`
+	ELBSecurityGroup    string `json:"elb_security_group,omitempty" yaml:"elb_security_group,omitempty"`
+	ECRNamespace        string `json:"ecr_namespace,omitempty" yaml:"ecr_namespace,omitempty"`
 }
 
 type ConfigDocker struct {
-	Bin string `json:"bin" yaml:"bin"`
+	Bin string `json:"bin,omitempty" yaml:"bin,omitempty"`
 }

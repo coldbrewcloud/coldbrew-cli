@@ -46,6 +46,15 @@ func (c *Config) ToJSON() ([]byte, error) {
 	return data, nil
 }
 
+func (c *Config) ToJSONWithIndent() ([]byte, error) {
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert to JSON: %s", err.Error())
+	}
+
+	return data, nil
+}
+
 func (c *Config) ToYAML() ([]byte, error) {
 	data, err := yaml.Marshal(c)
 	if err != nil {

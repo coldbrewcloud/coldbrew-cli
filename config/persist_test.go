@@ -36,7 +36,9 @@ load_balancer:
     unhealthy_limit: 2
 
 aws:
-  vpc: vpc-123456789                
+  elb_lb_name: echo_lb
+  elb_target_name: echo_target
+  ecr_namespace: myapps
 
 docker:
   bin: "/usr/local/bin/docker"      
@@ -69,7 +71,9 @@ const testConfigJSON = `
 		}
 	},
 	"aws": {
-		"vpc": "vpc-123456789"
+		"elb_lb_name": "echo_lb",
+		"elb_target_name": "echo_target"
+		"ecr_namespace": "myapps"
 	},
 	"docker": {
 		"bin": "/usr/local/bin/docker"
@@ -102,7 +106,9 @@ var testRefConfig = &Config{
 		},
 	},
 	AWS: &ConfigAWS{
-		VPC: "vpc-123456789",
+		ELBLoadBalancerName: "echo_lb",
+		ELBTargetName:       "echo_target",
+		ECRNamespace:        "myapps",
 	},
 	Docker: &ConfigDocker{
 		Bin: "/usr/local/bin/docker",
@@ -136,6 +142,17 @@ func TestConfig_ToYAML(t *testing.T) {
 
 func TestConfig_ToJSON(t *testing.T) {
 	data, err := testRefConfig.ToJSON()
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+
+	testConfig := &Config{}
+	err = testConfig.FromJSON(data)
+	assert.Nil(t, err)
+	assert.Equal(t, testRefConfig, testConfig)
+}
+
+func TestConfig_ToJSONWithIndent(t *testing.T) {
+	data, err := testRefConfig.ToJSONWithIndent()
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 

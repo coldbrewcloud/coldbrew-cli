@@ -8,7 +8,6 @@ import (
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
-	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
@@ -36,11 +35,11 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 	return cmd
 }
 
-func (c *Command) Run(cfg *config.Config) error {
-	c.awsClient = aws.NewClient(conv.S(c.globalFlags.AWSRegion), conv.S(c.globalFlags.AWSAccessKey), conv.S(c.globalFlags.AWSSecretKey))
+func (c *Command) Run() error {
+	c.awsClient = c.globalFlags.GetAWSClient()
 
 	// AWS networking
-	_, vpcID, subnetIDs, err := c.getAWSNetwork()
+	_, vpcID, subnetIDs, err := c.getAWSInfo()
 	if err != nil {
 		return c.exitWithError(err)
 	}
@@ -115,7 +114,7 @@ func (c *Command) Run(cfg *config.Config) error {
 	}
 
 	// instance security group
-	instanceSecurityGroupName := clusters.DefaultInstnaceSecurityGroupName(clusterName)
+	instanceSecurityGroupName := clusters.DefaultInstanceSecurityGroupName(clusterName)
 	instanceSecurityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(instanceSecurityGroupName)
 	instanceSecurityGroupID := ""
 	if err != nil {

@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/coldbrewcloud/coldbrew-cli/commands"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clustercreate"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterdelete"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterstatus"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/create"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/deploy"
 	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
@@ -41,9 +41,14 @@ func main() {
 	// register commands
 	{
 		// deploy
-		deployCommand := &deploy.DeployCommand{}
+		deployCommand := &deploy.Command{}
 		kpDeployCommand := deployCommand.Init(kingpinApp, globalFlags)
 		cmds[kpDeployCommand.FullCommand()] = deployCommand
+
+		// create / init
+		createCommand := &create.Command{}
+		kpCreateCommand := createCommand.Init(kingpinApp, globalFlags)
+		cmds[kpCreateCommand.FullCommand()] = createCommand
 
 		// cluster-create
 		clusterCreateCommand := &clustercreate.Command{}
@@ -105,7 +110,7 @@ func main() {
 		if n == cmd {
 			if err := c.Run(cfg); err != nil {
 				console.Errorf("Error: %s\n", err.Error())
-				os.Exit(10)
+				os.Exit(40)
 			}
 			os.Exit(0)
 		}
