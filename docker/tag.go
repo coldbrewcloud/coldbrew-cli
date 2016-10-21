@@ -6,14 +6,9 @@ import (
 	"github.com/d5/cc"
 )
 
-func (c *Client) BuildImage(buildPath, dockerfilePath, image string) error {
-	console.Println(c.dockerBin, "build", "-t", image, "-f", dockerfilePath, buildPath)
-	stdout, stderr, exit, err := exec.Exec(
-		c.dockerBin,
-		"build",
-		"-t", image,
-		"-f", dockerfilePath,
-		buildPath)
+func (c *Client) TagImage(src, dest string) error {
+	console.Println(c.dockerBin, "tag", src, dest)
+	stdout, stderr, exit, err := exec.Exec(c.dockerBin, "tag", src, dest)
 	if err != nil {
 		return err
 	}

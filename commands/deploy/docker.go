@@ -4,41 +4,50 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
-func (c *Command) buildDockerImage(image, tag string) error {
-	buildPath, err := filepath.Abs(conv.S(c.commandFlags.AppPath))
+func (c *Command) buildDockerImage(image string) error {
+	buildPath, err := c.globalFlags.GetApplicationDirectory()
 	if err != nil {
-		return fmt.Errorf("Failed to find app path [%s].", conv.S(c.commandFlags.AppPath))
+		return err
 	}
 
-	dockerfilePath, err := filepath.Abs(conv.S(c.commandFlags.DockerfilePath))
-	if err != nil {
-		return fmt.Errorf("Failed to find Dockerilfe path [%s]", conv.S(c.commandFlags.DockerfilePath))
+	dockerfilePath := conv.S(c._commandFlags.DockerfilePath)
+	if utils.IsBlank(dockerfilePath) {
+		dockerfilePath = "Dockerfile"
+	}
+
+	if !filepath.IsAbs(dockerfilePath) {
+		var err error
+		dockerfilePath, err = filepath.Abs(dockerfilePath)
+		if err != nil {
+			return fmt.Errorf("Error retrieving absolute path [%s]: %s", dockerfilePath, err.Error())
+		}
 	}
 
 	// docker build
-	if err = c.dockerClient.BuildImage(buildPath, dockerfilePath, image, tag); err != nil {
+	if err = c.dockerClient.BuildImage(buildPath, dockerfilePath, image); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Command) pushDockerImage(image, tag string) error {
+func (c *Command) pushDockerImage(image string) error {
 	// docker login
 	userName, password, proxyURL, err := c.awsClient.ECR().GetDockerLogin()
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve docker login info: %s", err.Error())
 	}
 	if err := c.dockerClient.Login(userName, password, proxyURL); err != nil {
-		return fmt.Errorf("Docker login failed: %s", err.Error())
+		return fmt.Errorf("Docker login [%s] failed: %s", userName, err.Error())
 	}
 
 	// docker push
-	if err = c.dockerClient.PushImage(image, tag); err != nil {
-		return fmt.Errorf("Failed to push docker image: %s", err.Error())
+	if err = c.dockerClient.PushImage(image); err != nil {
+		return fmt.Errorf("Failed to push Docker image [%s]: %s", image, err.Error())
 	}
 
 	return nil

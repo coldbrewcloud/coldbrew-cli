@@ -9,6 +9,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
@@ -41,7 +42,7 @@ func (c *Command) Run() error {
 	// AWS networking
 	_, vpcID, subnetIDs, err := c.getAWSInfo()
 	if err != nil {
-		return c.exitWithError(err)
+		return core.ExitWithError(err)
 	}
 
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
@@ -58,7 +59,7 @@ func (c *Command) Run() error {
 	ecsClusterName := clusters.DefaultECSClusterName(clusterName)
 	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
 	}
 	if ecsCluster == nil || conv.S(ecsCluster.Status) == "INACTIVE" {
 		createECSCluster = true
@@ -69,7 +70,7 @@ func (c *Command) Run() error {
 	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(clusterName)
 	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error()))
 	}
 	if ecsServiceRole == nil {
 		createECSServiceRole = true
@@ -80,7 +81,7 @@ func (c *Command) Run() error {
 	launchConfigName := clusters.DefaultLaunchConfigurationName(clusterName)
 	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", launchConfigName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", launchConfigName, err.Error()))
 	}
 	if launchConfig == nil {
 		createLaunchConfiguration = true
@@ -91,7 +92,7 @@ func (c *Command) Run() error {
 	autoScalingGroupName := clusters.DefaultAutoScalingGroupName(clusterName)
 	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
 	}
 	if autoScalingGroup == nil || !utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		createAutoScalingGroup = true
@@ -105,7 +106,7 @@ func (c *Command) Run() error {
 	} else {
 		instanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
 		if err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to retrieve Instance Profile [%s]: %s", instanceProfileName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to retrieve Instance Profile [%s]: %s", instanceProfileName, err.Error()))
 		}
 		if instanceProfile == nil {
 			createInstanceProfile = true
@@ -118,7 +119,7 @@ func (c *Command) Run() error {
 	instanceSecurityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(instanceSecurityGroupName)
 	instanceSecurityGroupID := ""
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", instanceSecurityGroupName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", instanceSecurityGroupName, err.Error()))
 	}
 	if instanceSecurityGroup == nil {
 		createInstanceSecurityGroup = true
@@ -134,7 +135,7 @@ func (c *Command) Run() error {
 	}
 
 	// confirmation
-	if !conv.B(c.commandFlags.ForceCreate) && !console.AskConfirm("Do you want to create these resources?") {
+	if !conv.B(c.commandFlags.ForceCreate) && !console.AskConfirm("Do you want to create these resources?", false) {
 		return nil
 	}
 
@@ -143,7 +144,7 @@ func (c *Command) Run() error {
 		console.Printf("Creating Instance Profile [%s]...\n", cc.Green(instanceProfileName))
 
 		if _, err = c.createDefaultInstanceProfile(instanceProfileName); err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create Instance Profile [%s]: %s", instanceProfileName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to create Instance Profile [%s]: %s", instanceProfileName, err.Error()))
 		}
 	}
 
@@ -154,10 +155,10 @@ func (c *Command) Run() error {
 		var err error
 		instanceSecurityGroupID, err = c.awsClient.EC2().CreateSecurityGroup(instanceSecurityGroupName, instanceSecurityGroupName, vpcID)
 		if err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create EC2 Security Group [%s] for container instances: %s", instanceSecurityGroupName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to create EC2 Security Group [%s] for container instances: %s", instanceSecurityGroupName, err.Error()))
 		}
 		if err := c.awsClient.EC2().AddInboundToSecurityGroup(instanceSecurityGroupID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to add SSH inbound rule to Security Group [%s]: %s", instanceSecurityGroupName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to add SSH inbound rule to Security Group [%s]: %s", instanceSecurityGroupName, err.Error()))
 		}
 	}
 
@@ -169,10 +170,10 @@ func (c *Command) Run() error {
 		keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
 		keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
 		if err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to retrieve key pair info [%s]: %s", keyPairName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to retrieve key pair info [%s]: %s", keyPairName, err.Error()))
 		}
 		if keyPairInfo == nil {
-			return c.exitWithError(fmt.Errorf("Key pair [%s] was not found\n", keyPairName))
+			return core.ExitWithError(fmt.Errorf("Key pair [%s] was not found\n", keyPairName))
 		}
 
 		// container instance type
@@ -184,7 +185,7 @@ func (c *Command) Run() error {
 		// container instance image ID
 		imageID := c.getClusterImageID(conv.S(c.globalFlags.AWSRegion))
 		if imageID == "" {
-			return c.exitWithError(errors.New("No defatul instance image found"))
+			return core.ExitWithError(errors.New("No defatul instance image found"))
 		}
 
 		instanceUserData := c.getInstanceUserData(ecsClusterName)
@@ -204,7 +205,7 @@ func (c *Command) Run() error {
 			time.Sleep(1 * time.Second)
 		}
 		if lastErr != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create EC2 Launch Configuration [%s]: %s", launchConfigName, lastErr.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to create EC2 Launch Configuration [%s]: %s", launchConfigName, lastErr.Error()))
 		}
 	}
 
@@ -215,7 +216,7 @@ func (c *Command) Run() error {
 		// if existing auto scaling group is currently pending delete, wait a bit so it gets fully deleted
 		if autoScalingGroup != nil && !utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 			if err := c.waitAutoScalingGroupDeletion(autoScalingGroupName); err != nil {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		}
 
@@ -223,7 +224,7 @@ func (c *Command) Run() error {
 
 		err = c.awsClient.AutoScaling().CreateAutoScalingGroup(autoScalingGroupName, launchConfigName, subnetIDs, 0, initialCapacity, initialCapacity)
 		if err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to create EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
 		}
 	}
 
@@ -232,7 +233,7 @@ func (c *Command) Run() error {
 		console.Printf("Creating ECS Cluster [%s]...\n", cc.Green(ecsClusterName))
 
 		if _, err := c.awsClient.ECS().CreateCluster(ecsClusterName); err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to create ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
 		}
 	}
 
@@ -241,14 +242,9 @@ func (c *Command) Run() error {
 		console.Printf("Creating ECS Service Role [%s]...\n", cc.Green(ecsServiceRoleName))
 
 		if _, err := c.createECSServiceRole(ecsServiceRoleName); err != nil {
-			return c.exitWithError(fmt.Errorf("Failed to create IAM role [%s]: %s", ecsServiceRoleName, err.Error()))
+			return core.ExitWithError(fmt.Errorf("Failed to create IAM role [%s]: %s", ecsServiceRoleName, err.Error()))
 		}
 	}
 
-	return nil
-}
-
-func (c *Command) exitWithError(err error) error {
-	console.Errorln(cc.Red("Error:"), err.Error())
 	return nil
 }

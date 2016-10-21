@@ -6,6 +6,7 @@ import (
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
@@ -49,7 +50,7 @@ func (c *Command) Run() error {
 	ecsClusterName := clusters.DefaultECSClusterName(clusterName)
 	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
 	}
 	if ecsCluster != nil && conv.S(ecsCluster.Status) != "INACTIVE" {
 		deleteECSCluster = true
@@ -60,7 +61,7 @@ func (c *Command) Run() error {
 	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(clusterName)
 	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error()))
 	}
 	if ecsServiceRole != nil {
 		deleteECSServiceRole = true
@@ -71,7 +72,7 @@ func (c *Command) Run() error {
 	lcName := clusters.DefaultLaunchConfigurationName(clusterName)
 	launchConfiguration, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(lcName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error()))
 	}
 	if launchConfiguration != nil {
 		deleteLaunchConfiguration = true
@@ -82,7 +83,7 @@ func (c *Command) Run() error {
 	asgName := clusters.DefaultAutoScalingGroupName(clusterName)
 	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error()))
 	}
 	if autoScalingGroup != nil && utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		deleteAutoScalingGroup = true
@@ -93,7 +94,7 @@ func (c *Command) Run() error {
 	instanceProfileName := clusters.DefaultInstanceProfileName(clusterName)
 	instanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Instance Profile [%s]: %s", instanceProfileName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve Instance Profile [%s]: %s", instanceProfileName, err.Error()))
 	}
 	if instanceProfile != nil {
 		deleteInstanceProfile = true
@@ -104,7 +105,7 @@ func (c *Command) Run() error {
 	sgName := clusters.DefaultInstanceSecurityGroupName(clusterName)
 	securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(sgName)
 	if err != nil {
-		return c.exitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", sgName, err.Error()))
+		return core.ExitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", sgName, err.Error()))
 	}
 	if securityGroup != nil {
 		deleteInstanceSecurityGroups = true
@@ -118,7 +119,7 @@ func (c *Command) Run() error {
 	}
 
 	// confirmation
-	if !conv.B(c.commandFlags.ForceDelete) && !console.AskConfirm("Do you want to delete these resources?") {
+	if !conv.B(c.commandFlags.ForceDelete) && !console.AskConfirm("Do you want to delete these resources?", false) {
 		return nil
 	}
 
@@ -130,7 +131,7 @@ func (c *Command) Run() error {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		} else {
 			console.Printf("Deleting Auto Scaling Group [%s]... %s\n", cc.Red(asgName), cc.BlackH("(this may take some time)"))
@@ -138,7 +139,7 @@ func (c *Command) Run() error {
 				if conv.B(c.commandFlags.ContinueOnError) {
 					console.Errorln(cc.Red("Error: "), err.Error())
 				} else {
-					return c.exitWithError(err)
+					return core.ExitWithError(err)
 				}
 			}
 		}
@@ -153,7 +154,7 @@ func (c *Command) Run() error {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		}
 	}
@@ -166,7 +167,7 @@ func (c *Command) Run() error {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		}
 	}
@@ -180,7 +181,7 @@ func (c *Command) Run() error {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		}
 	}
@@ -194,7 +195,7 @@ func (c *Command) Run() error {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		}
 	}
@@ -207,15 +208,10 @@ func (c *Command) Run() error {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error: "), err.Error())
 			} else {
-				return c.exitWithError(err)
+				return core.ExitWithError(err)
 			}
 		}
 	}
 
-	return nil
-}
-
-func (c *Command) exitWithError(err error) error {
-	console.Errorln(cc.Red("Error:"), err.Error())
 	return nil
 }

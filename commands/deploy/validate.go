@@ -5,44 +5,35 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
-var (
-	appVersionRE = regexp.MustCompile(`^[\w\-.]{1,32}$`)
-)
-
-func (c *Command) validateFlags() error {
-	if !appVersionRE.MatchString(conv.S(c.commandFlags.AppVersion)) {
-		return fmt.Errorf("Invalid app version [%s]", conv.S(c.commandFlags.AppVersion))
+func (c *Command) validateFlags(flags *Flags) error {
+	if !utils.IsBlank(conv.S(flags.DockerImage)) && core.DockerImageURIRE.MatchString(conv.S(flags.DockerImage)) {
+		return fmt.Errorf("Invalid docker image [%s]", conv.S(flags.DockerImage))
 	}
 
-	if err := c.validatePath(conv.S(c.commandFlags.DockerfilePath)); err != nil {
-		return fmt.Errorf("Invalid Dockerfile path [%s]", conv.S(c.commandFlags.DockerfilePath))
+	if err := c.validatePath(conv.S(flags.DockerfilePath)); err != nil {
+		return fmt.Errorf("Invalid Dockerfile path [%s]", conv.S(flags.DockerfilePath))
 	}
 
-	if utils.IsBlank(conv.S(c.commandFlags.DockerImage)) {
-		return fmt.Errorf("Invalid docker image [%s]", conv.S(c.commandFlags.DockerImage))
+	if utils.IsBlank(conv.S(flags.DockerImage)) {
+		return fmt.Errorf("Invalid docker image [%s]", conv.S(flags.DockerImage))
 	}
 
-	if *c.commandFlags.Units > core.MaxAppUnits {
+	if uint16(*flags.Units) > core.MaxAppUnits {
 		return fmt.Errorf("Units cannot exceed %d", core.MaxAppUnits)
 	}
 
-	if *c.commandFlags.CPU > core.MaxAppCPU {
+	if *flags.CPU > core.MaxAppCPU {
 		return fmt.Errorf("CPU cannot exceed %d", core.MaxAppCPU)
 	}
 
-	if *c.commandFlags.Memory > core.MaxAppMemory {
-		return fmt.Errorf("Memory cannot exceed %d", core.MaxAppMemory)
-	}
-
-	if err := c.validatePath(conv.S(c.commandFlags.EnvsFile)); err != nil {
-		return fmt.Errorf("Invalid envs file [%s]", conv.S(c.commandFlags.EnvsFile))
+	if !utils.IsBlank(conv.S(flags.Memory)) && !core.SizeExpressionRE.MatchString(conv.S(flags.Memory)) {
+		return fmt.Errorf("Invalid app memory [%s]", conv.S(flags.Memory))
 	}
 
 	return nil

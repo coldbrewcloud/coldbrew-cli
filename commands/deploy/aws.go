@@ -1,14 +1,15 @@
 package deploy
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"math"
+
+	"strings"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecs"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/elb"
-	"github.com/coldbrewcloud/coldbrew-cli/console"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
@@ -54,21 +55,6 @@ func (c *Command) prepareECRRepo(repoName string) (string, error) {
 	return *ecrRepo.RepositoryUri, nil
 }
 
-func (c *Command) prepareECSCluster(clusterName string) error {
-	cluster, err := c.awsClient.ECS().RetrieveCluster(clusterName)
-	if err != nil {
-		return fmt.Errorf("Failed to retrieve ECS cluster [%s]: %s", clusterName, err.Error())
-	}
-
-	if cluster == nil {
-		if _, err := c.awsClient.ECS().CreateCluster(clusterName); err != nil {
-			return fmt.Errorf("Failed to create ECS cluster [%s]: %s", clusterName, err.Error())
-		}
-	}
-
-	return nil
-}
-
 func (c *Command) prepareECSServiceRole(roleName string) error {
 	const (
 		ecsAssumeRolePolicy     = `{"Version": "2008-10-17", "Statement": [{"Sid": "", "Effect": "Allow", "Principal": {"Service": "ecs.amazonaws.com"},"Action": "sts:AssumeRole"}]}`
@@ -94,29 +80,26 @@ func (c *Command) prepareECSServiceRole(roleName string) error {
 }
 
 func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, error) {
-	envs, err := c.populateEnvVars()
-	if err != nil {
-		return "", err
-	}
-
 	// port mappings
-	// TODO: support multiple ports exposing
-	// TODO: support UDP protocol
 	var portMappings []ecs.PortMapping
-	if conv.U16(c.commandFlags.AppPort) > 0 {
+	if conv.U16(c.conf.Port) > 0 {
 		portMappings = []ecs.PortMapping{
 			{
-				ContainerPort: conv.U16(c.commandFlags.AppPort),
+				ContainerPort: conv.U16(c.conf.Port),
 				Protocol:      "tcp",
 			},
 		}
 	}
 
-	ecsTaskDefinitionName := conv.S(c.commandFlags.AppName)
-	ecsTaskContainerName := conv.S(c.commandFlags.AppName)
-	cpu := conv.U64(c.commandFlags.CPU)
-	memory := conv.U64(c.commandFlags.Memory)
-	useCloudWatchLogs := *c.commandFlags.CloudWatchLogs
+	ecsTaskDefinitionName := conv.S(c.conf.Name)
+	ecsTaskContainerName := conv.S(c.conf.Name)
+	cpu := uint64(math.Ceil(conv.F64(c.conf.CPU) * 1024.0))
+	memory, err := core.ParseSizeExpression(conv.S(c.conf.Memory))
+	if err != nil {
+		return "", err
+	}
+	memory /= 1024
+	useCloudWatchLogs := false
 
 	ecsTaskDef, err := c.awsClient.ECS().UpdateTaskDefinition(
 		ecsTaskDefinitionName,
@@ -124,7 +107,7 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 		ecsTaskContainerName,
 		cpu,
 		memory,
-		envs,
+		c.conf.Env,
 		portMappings,
 		useCloudWatchLogs)
 	if err != nil {
@@ -135,15 +118,17 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 }
 
 func (c *Command) createOrUpdateECSService(ecsTaskDefinitionARN string) error {
-	ecsClusterName := conv.S(c.commandFlags.ECSClusterName)
-	ecsServiceName := conv.S(c.commandFlags.AppName)
+	ecsClusterName := clusters.DefaultECSClusterName(conv.S(c.conf.ClusterName))
+	ecsServiceName := conv.S(c.conf.Name)
 
 	ecsService, err := c.awsClient.ECS().RetrieveService(ecsClusterName, ecsServiceName)
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve ECS service [%s/%s]: %s", ecsClusterName, ecsServiceName, err.Error())
+		return fmt.Errorf("Failed to retrieve ECS Service [%s/%s]: %s", ecsClusterName, ecsServiceName, err.Error())
 	}
 
-	if ecsService != nil && *ecsService.Status != "INACTIVE" {
+	if ecsService != nil && conv.S(ecsService.Status) != "INACTIVE" {
+		// TODO: handle the case where configuration requires changes in ECS Service
+		// E.g. ask user to re-create the Service
 		if err := c.updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN); err != nil {
 			return err
 		}
@@ -157,55 +142,54 @@ func (c *Command) createOrUpdateECSService(ecsTaskDefinitionARN string) error {
 }
 
 func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN string) error {
-	// TODO: support multiple load balancers
-
-	loadBalancerName := conv.S(c.commandFlags.LoadBalancerName)
-	ecsServiceRoleName := conv.S(c.commandFlags.ECSServiceRoleName)
-	ecsTaskContainerName := conv.S(c.commandFlags.AppName) // TODO: implicitly known; should have been retrieved from task definition
-	ecsTaskContainerPort := conv.U16(c.commandFlags.AppPort)
+	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(conv.S(c.conf.ClusterName))
+	ecsTaskContainerName := conv.S(c.conf.Name)
+	ecsTaskContainerPort := conv.U16(c.conf.Port)
 
 	var loadBalancers []*ecs.LoadBalancer
-	if !utils.IsBlank(loadBalancerName) {
+	if conv.U16(c.conf.Port) > 0 && c.conf.LoadBalancer != nil {
 		// prepare load balancer (create one if needed)
-		loadBalancer, err := c.prepareELBLoadBalancer(loadBalancerName, ecsServiceRoleName, ecsTaskContainerName, ecsTaskContainerPort)
+		loadBalancer, err := c.prepareELBLoadBalancer(
+			conv.S(c.conf.AWS.ELBLoadBalancerName),
+			conv.S(c.conf.AWS.ELBTargetGroupName),
+			conv.S(c.conf.AWS.ELBSecurityGroup),
+			conv.U16(c.conf.LoadBalancer.Port),
+			ecsServiceRoleName,
+			ecsTaskContainerName,
+			ecsTaskContainerPort)
 		if err != nil {
 			return err
 		}
-		loadBalancers = []*ecs.LoadBalancer{loadBalancer}
 
-		// prepare ECS service role (create one if needed)
-		if err := c.prepareECSServiceRole(ecsServiceRoleName); err != nil {
-			return err
-		}
+		loadBalancers = []*ecs.LoadBalancer{loadBalancer}
 	}
 
-	desiredUnits := conv.U16(c.commandFlags.Units)
-
-	ecsService, err := c.awsClient.ECS().CreateService(
-		ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, desiredUnits,
+	_, err := c.awsClient.ECS().CreateService(
+		ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units),
 		loadBalancers, ecsServiceRoleName)
 	if err != nil {
 		return fmt.Errorf("Failed to create ECS service [%s/%s]: %s", ecsClusterName, ecsServiceName, err.Error())
 	}
 
-	console.Println("ECS service created", conv.S(ecsService.ServiceName), conv.S(ecsService.ServiceArn))
-
 	return nil
 }
 
-func (c *Command) prepareELBLoadBalancer(lbName string, ecsServiceRoleName, ecsTaskContainerName string, ecsTaskContainerPort uint16) (*ecs.LoadBalancer, error) {
-	elbTargetGroupName := lbName
-
-	elbDesc, err := c.awsClient.ELB().RetrieveLoadBalancer(lbName)
+func (c *Command) prepareELBLoadBalancer(elbLoadBalancerName, elbTargetGroupName, elbLoadBalancerSecurityGroup string, elbPort uint16, ecsServiceRoleName, ecsTaskContainerName string, ecsTaskContainerPort uint16) (*ecs.LoadBalancer, error) {
+	_, vpcID, err := c.globalFlags.GetAWSRegionAndVPCID()
 	if err != nil {
-		fmt.Errorf("Failed to retrieve ELB load balancer [%s]: %s", lbName, err.Error())
+		return nil, err
+	}
+
+	elbDesc, err := c.awsClient.ELB().RetrieveLoadBalancer(elbLoadBalancerName)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
 	}
 	if elbDesc != nil {
 		elbTargetGroup, err := c.awsClient.ELB().RetrieveTargetGroup(
 			conv.S(elbDesc.LoadBalancerArn),
 			elbTargetGroupName)
 		if err != nil {
-			fmt.Errorf("Failed to retrieve ELB target group [%s]: %s", elbTargetGroupName, err.Error())
+			return nil, fmt.Errorf("Failed to retrieve ELB Target Group [%s]: %s", elbTargetGroupName, err.Error())
 		}
 
 		return &ecs.LoadBalancer{
@@ -215,33 +199,53 @@ func (c *Command) prepareELBLoadBalancer(lbName string, ecsServiceRoleName, ecsT
 		}, nil
 	} else {
 		// create ELB target group
-		elbTargetGroupARN, err := c.createELBTargetGroup(lbName)
+		elbTargetGroupARN, err := c.createELBTargetGroup(elbTargetGroupName)
 		if err != nil {
 			return nil, err
 		}
 
-		// load balancer port
-		lbPort := uint16(80)
+		// create security group for ELB (if needed)
+		if utils.IsBlank(elbLoadBalancerSecurityGroup) {
 
-		securityGroupName := fmt.Sprintf("elb-%s", lbName)
-		securityGroupID, err := c.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, conv.S(c.commandFlags.VPCID))
-		if err != nil {
-			return nil, fmt.Errorf("Failed to create security group [%s]: %s", securityGroupName, err.Error())
-		}
-		err = c.awsClient.EC2().AddInboundToSecurityGroup(securityGroupID, ec2.SecurityGroupProtocolTCP, lbPort, lbPort, "0.0.0.0/0")
-		if err != nil {
-			return nil, fmt.Errorf("Failed to add incoming rule to security group [%s]: %s", securityGroupID, err.Error())
+			securityGroupName := fmt.Sprintf("elb-%s", elbLoadBalancerName)
+			elbLoadBalancerSecurityGroup, err = c.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, vpcID)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to create EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+			}
+			err = c.awsClient.EC2().AddInboundToSecurityGroup(
+				elbLoadBalancerSecurityGroup,
+				ec2.SecurityGroupProtocolTCP,
+				elbPort, elbPort, "0.0.0.0/0")
+			if err != nil {
+				return nil, fmt.Errorf("Failed to add incoming rule to EC2 Security Group [%s]: %s", elbLoadBalancerSecurityGroup, err.Error())
+			}
+
+		} else {
+			// make sure specified Security Group actually exists
+			if strings.HasPrefix(elbLoadBalancerSecurityGroup, "sg-") {
+				securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroup(elbLoadBalancerSecurityGroup)
+				if securityGroup == nil || err != nil {
+					return nil, fmt.Errorf("EC2 Security Group [%s] was not found.", elbLoadBalancerSecurityGroup)
+				}
+			} else {
+				securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(elbLoadBalancerSecurityGroup)
+				if securityGroup == nil || err != nil {
+					return nil, fmt.Errorf("EC2 Security Group [%s] was not found.", elbLoadBalancerSecurityGroup)
+				}
+				elbLoadBalancerSecurityGroup = conv.S(securityGroup.GroupId)
+			}
 		}
 
 		// create ELB load balancer
-		elbLoadBalancerARN, err := c.createELBLoadBalancer(lbName, securityGroupID)
+		elbLoadBalancerARN, err := c.createELBLoadBalancer(elbLoadBalancerName, vpcID, elbLoadBalancerSecurityGroup)
 		if err != nil {
 			return nil, err
 		}
 
-		err = c.awsClient.ELB().CreateListener(elbLoadBalancerARN, elbTargetGroupARN, lbPort, "HTTP")
+		// create listen between load balancer and target group
+		err = c.awsClient.ELB().CreateListener(elbLoadBalancerARN, elbTargetGroupARN, elbPort, "HTTP")
 		if err != nil {
-			return nil, fmt.Errorf("Failed to create ELB listener: %s", err.Error())
+			return nil, fmt.Errorf("Failed to create ELB Listener: %s", err.Error())
 		}
 
 		return &ecs.LoadBalancer{
@@ -253,17 +257,30 @@ func (c *Command) prepareELBLoadBalancer(lbName string, ecsServiceRoleName, ecsT
 }
 
 func (c *Command) createELBTargetGroup(targetGroupName string) (string, error) {
-	healthCheck := &elb.HealthCheckParams{
-		CheckIntervalSeconds:    30,
-		CheckPath:               conv.S(c.commandFlags.HealthCheckPath),
-		Protocol:                "HTTP",
-		ExpectedHTTPStatusCodes: "200-299",
-		CheckTimeoutSeconds:     10,
-		HealthyThresholdCount:   5,
-		UnhealthyThresholdCount: 2,
+	_, vpcID, err := c.globalFlags.GetAWSRegionAndVPCID()
+	if err != nil {
+		return "", err
 	}
 
-	vpcID := conv.S(c.commandFlags.VPCID)
+	checkInterval, err := core.ParseTimeExpression(conv.S(c.conf.LoadBalancer.HealthCheck.Interval))
+	if err != nil {
+		return "", nil
+	}
+
+	timeout, err := core.ParseTimeExpression(conv.S(c.conf.LoadBalancer.HealthCheck.Timeout))
+	if err != nil {
+		return "", nil
+	}
+
+	healthCheck := &elb.HealthCheckParams{
+		CheckIntervalSeconds:    uint16(checkInterval),
+		CheckPath:               conv.S(c.conf.LoadBalancer.HealthCheck.Path),
+		Protocol:                "HTTP",
+		ExpectedHTTPStatusCodes: conv.S(c.conf.LoadBalancer.HealthCheck.Status),
+		CheckTimeoutSeconds:     uint16(timeout),
+		HealthyThresholdCount:   conv.U16(c.conf.LoadBalancer.HealthCheck.HealthyLimit),
+		UnhealthyThresholdCount: conv.U16(c.conf.LoadBalancer.HealthCheck.UnhealthyLimit),
+	}
 
 	targetGroup, err := c.awsClient.ELB().CreateTargetGroup(targetGroupName, 80, "HTTP", vpcID, healthCheck)
 	if err != nil {
@@ -273,54 +290,25 @@ func (c *Command) createELBTargetGroup(targetGroupName string) (string, error) {
 	return conv.S(targetGroup.TargetGroupArn), nil
 }
 
-func (c *Command) createELBLoadBalancer(loadBalancerName, securityGroupID string) (string, error) {
-	vpcID := conv.S(c.commandFlags.VPCID)
+func (c *Command) createELBLoadBalancer(name, vpcID, securityGroupID string) (string, error) {
 	subnetIDs, err := c.awsClient.EC2().ListVPCSubnets(vpcID)
 	if err != nil {
 		return "", fmt.Errorf("Failed to list subnets: %s", err.Error())
 	}
 
-	lb, err := c.awsClient.ELB().CreateLoadBalancer(loadBalancerName, true, []string{securityGroupID}, subnetIDs)
+	lb, err := c.awsClient.ELB().CreateLoadBalancer(name, true, []string{securityGroupID}, subnetIDs)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create ELB load balancer [%s]: %s", loadBalancerName, err.Error())
+		return "", fmt.Errorf("Failed to create ELB Load Balancer [%s]: %s", name, err.Error())
 	}
 
 	return conv.S(lb.LoadBalancerArn), nil
 }
 
 func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN string) error {
-	desiredUnits := conv.U16(c.commandFlags.Units)
-
-	ecsService, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, desiredUnits)
+	_, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units))
 	if err != nil {
 		return fmt.Errorf("Failed to update ECS service [%s/%s]: %s", ecsClusterName, ecsServiceName, err.Error())
 	}
 
-	console.Println("ECS service updated", conv.S(ecsService.ServiceName), conv.S(ecsService.ServiceArn))
-
 	return nil
-}
-
-func (c *Command) populateEnvVars() (map[string]string, error) {
-	// load from envs file (JSON)
-	envs := make(map[string]string)
-	if !utils.IsBlank(conv.S(c.commandFlags.EnvsFile)) {
-		data, err := ioutil.ReadFile(conv.S(c.commandFlags.EnvsFile))
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read envs file [%s]: %s", conv.S(c.commandFlags.EnvsFile), err.Error())
-		}
-
-		if err := json.Unmarshal(data, &envs); err != nil {
-			return nil, fmt.Errorf("Failed to parse envs file: %s", err.Error())
-		}
-	}
-
-	// override from CLI params
-	if c.commandFlags.Envs != nil {
-		for ek, ev := range *c.commandFlags.Envs {
-			envs[ek] = ev
-		}
-	}
-
-	return envs, nil
 }

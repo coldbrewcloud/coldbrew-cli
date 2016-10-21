@@ -38,11 +38,28 @@ func U64(p *uint64) uint64 {
 	return *p
 }
 
+func F64(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func F64P(v float64) *float64 {
+	p := v
+	return &p
+}
+
 func B(p *bool) bool {
 	if p == nil {
 		return false
 	}
 	return *p
+}
+
+func BP(v bool) *bool {
+	p := v
+	return &p
 }
 
 func I64(p *int64) int64 {

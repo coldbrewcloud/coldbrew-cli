@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +39,8 @@ load_balancer:
 aws:
   elb_lb_name: echo_lb
   elb_target_name: echo_target
-  ecr_namespace: myapps
+  elb_security_group: echo_lb_sg
+  ecr_repo_name: echo_repo
 
 docker:
   bin: "/usr/local/bin/docker"      
@@ -72,8 +74,9 @@ const testConfigJSON = `
 	},
 	"aws": {
 		"elb_lb_name": "echo_lb",
-		"elb_target_name": "echo_target"
-		"ecr_namespace": "myapps"
+		"elb_target_name": "echo_target",
+		"elb_security_group": "echo_lb_sg",
+		"ecr_repo_name": "echo_repo"
 	},
 	"docker": {
 		"bin": "/usr/local/bin/docker"
@@ -81,37 +84,36 @@ const testConfigJSON = `
 }`
 
 var testRefConfig = &Config{
-	Name:        "echo",
-	ClusterName: "cluster1",
-	Port:        8080,
-	CPU:         1.0,
-	Memory:      "200m",
-	Units:       4,
+	Name:        conv.SP("echo"),
+	ClusterName: conv.SP("cluster1"),
+	Port:        conv.U16P(8080),
+	CPU:         conv.F64P(1.0),
+	Memory:      conv.SP("200m"),
+	Units:       conv.U16P(4),
 	Env: map[string]string{
 		"key1": "value1",
 		"key2": "value2",
 	},
 	LoadBalancer: &ConfigLoadBalancer{
-		Name:          "lb1",
-		IsHTTPS:       false,
-		Port:          80,
-		SecurityGroup: "sg-123456789",
+		IsHTTPS: conv.BP(false),
+		Port:    conv.U16P(80),
 		HealthCheck: &ConfigLoadBalancerHealthCheck{
-			Interval:       "30s",
-			Path:           "/ping",
-			Status:         "200-299",
-			Timeout:        "5s",
-			HealthyLimit:   5,
-			UnhealthyLimit: 2,
+			Interval:       conv.SP("30s"),
+			Path:           conv.SP("/ping"),
+			Status:         conv.SP("200-299"),
+			Timeout:        conv.SP("5s"),
+			HealthyLimit:   conv.U16P(5),
+			UnhealthyLimit: conv.U16P(2),
 		},
 	},
 	AWS: &ConfigAWS{
-		ELBLoadBalancerName: "echo_lb",
-		ELBTargetName:       "echo_target",
-		ECRNamespace:        "myapps",
+		ELBLoadBalancerName: conv.SP("echo_lb"),
+		ELBTargetGroupName:  conv.SP("echo_target"),
+		ELBSecurityGroup:    conv.SP("echo_lb_sg"),
+		ECRRepositoryName:   conv.SP("echo_repo"),
 	},
 	Docker: &ConfigDocker{
-		Bin: "/usr/local/bin/docker",
+		Bin: conv.SP("/usr/local/bin/docker"),
 	},
 }
 

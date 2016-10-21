@@ -6,11 +6,15 @@ import (
 	"strings"
 )
 
-func AskConfirm(message string) bool {
+func AskConfirm(message string, defaultYes bool) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		stdout("%s %s: ", message, "[y/N]")
+		if defaultYes {
+			stdout("%s %s: ", message, "[YES/no]")
+		} else {
+			stdout("%s %s: ", message, "[yes/NO]")
+		}
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -21,8 +25,10 @@ func AskConfirm(message string) bool {
 		switch strings.ToLower(strings.TrimSpace(response)) {
 		case "y", "yes":
 			return true
-		case "", "n", "no":
+		case "n", "no":
 			return false
+		case "":
+			return defaultYes
 		}
 	}
 }

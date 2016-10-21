@@ -95,6 +95,7 @@ func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerNa
 		Family: _aws.String(taskDefinitionName),
 	}
 
+	// TODO: move this out of this function
 	if cloudWatchLogs {
 		params.ContainerDefinitions[0].LogConfiguration = &_ecs.LogConfiguration{
 			LogDriver: _aws.String(_ecs.LogDriverAwslogs),
