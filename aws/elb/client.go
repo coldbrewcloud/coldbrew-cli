@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	_aws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	_elb "github.com/aws/aws-sdk-go/service/elbv2"
 )
@@ -45,6 +46,11 @@ func (c *Client) RetrieveLoadBalancer(elbName string) (*_elb.LoadBalancer, error
 	}
 	res, err := c.svc.DescribeLoadBalancers(params)
 	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == "LoadBalancerNotFound" {
+				return nil, nil
+			}
+		}
 		return nil, err
 	}
 
@@ -55,6 +61,16 @@ func (c *Client) RetrieveLoadBalancer(elbName string) (*_elb.LoadBalancer, error
 	}
 
 	return nil, fmt.Errorf("Invalid result: %v", res.LoadBalancers)
+}
+
+func (c *Client) DeleteLoadBalancer(loadBalancerARN string) error {
+	params := &_elb.DeleteLoadBalancerInput{
+		LoadBalancerArn: _aws.String(loadBalancerARN),
+	}
+
+	_, err := c.svc.DeleteLoadBalancer(params)
+
+	return err
 }
 
 func (c *Client) CreateTargetGroup(name string, port uint16, protocol string, vpcID string, healthCheck *HealthCheckParams) (*_elb.TargetGroup, error) {
@@ -86,22 +102,51 @@ func (c *Client) CreateTargetGroup(name string, port uint16, protocol string, vp
 	return res.TargetGroups[0], nil
 }
 
-func (c *Client) RetrieveTargetGroup(elbARN, targetGroupName string) (*_elb.TargetGroup, error) {
+func (c *Client) RetrieveTargetGroup(targetGroupARN string) (*_elb.TargetGroup, error) {
 	params := &_elb.DescribeTargetGroupsInput{
-		LoadBalancerArn: _aws.String(elbARN),
+		TargetGroupArns: _aws.StringSlice([]string{targetGroupARN}),
 	}
 	res, err := c.svc.DescribeTargetGroups(params)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, tg := range res.TargetGroups {
-		if *tg.TargetGroupName == targetGroupName {
-			return tg, nil
-		}
+	if len(res.TargetGroups) > 0 {
+		return res.TargetGroups[0], nil
 	}
 
 	return nil, nil
+}
+
+func (c *Client) RetrieveTargetGroupByName(targetGroupName string) (*_elb.TargetGroup, error) {
+	params := &_elb.DescribeTargetGroupsInput{
+		Names: _aws.StringSlice([]string{targetGroupName}),
+	}
+	res, err := c.svc.DescribeTargetGroups(params)
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == "TargetGroupNotFound" {
+				return nil, nil
+			}
+		}
+		return nil, err
+	}
+
+	if len(res.TargetGroups) > 0 {
+		return res.TargetGroups[0], nil
+	}
+
+	return nil, nil
+}
+
+func (c *Client) DeleteTargetGroup(targetGroupARN string) error {
+	params := &_elb.DeleteTargetGroupInput{
+		TargetGroupArn: _aws.String(targetGroupARN),
+	}
+
+	_, err := c.svc.DeleteTargetGroup(params)
+
+	return err
 }
 
 func (c *Client) CreateListener(loadBalancerARN, targetGroupARN string, port uint16, protocol string) error {

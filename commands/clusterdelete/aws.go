@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/autoscaling"
-	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -59,7 +59,7 @@ func (c *Command) scaleDownAutoScalingGroup(autoScalingGroup *autoscaling.Group)
 }
 
 func (c *Command) deleteECSServiceRole(roleName string) error {
-	if err := c.awsClient.IAM().DetachRolePolicy(clusters.ECSServiceRolePolicyARN, roleName); err != nil {
+	if err := c.awsClient.IAM().DetachRolePolicy(core.ECSServiceRolePolicyARN, roleName); err != nil {
 		return fmt.Errorf("Failed to detach ECS Service Role Policy from IAM Role [%s]: %s", roleName, err.Error())
 	}
 
@@ -75,7 +75,7 @@ func (c *Command) deleteDefaultInstanceProfile(profileName string) error {
 		return fmt.Errorf("Failed to remove IAM Role [%s] from Instance Profile [%s]: %s", profileName, profileName, err.Error())
 	}
 
-	if err := c.awsClient.IAM().DetachRolePolicy(clusters.AdministratorAccessPolicyARN, profileName); err != nil {
+	if err := c.awsClient.IAM().DetachRolePolicy(core.AdministratorAccessPolicyARN, profileName); err != nil {
 		return fmt.Errorf("Failed to detach Administrator Access Policy from IAM Role [%s]: %s", profileName, err.Error())
 	}
 

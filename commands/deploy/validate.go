@@ -20,16 +20,12 @@ func (c *Command) validateFlags(flags *Flags) error {
 		return fmt.Errorf("Invalid Dockerfile path [%s]", conv.S(flags.DockerfilePath))
 	}
 
-	if utils.IsBlank(conv.S(flags.DockerImage)) {
-		return fmt.Errorf("Invalid docker image [%s]", conv.S(flags.DockerImage))
+	if conv.I64(flags.Units) >= 0 && uint16(conv.I64(flags.Units)) > core.MaxAppUnits {
+		return fmt.Errorf("Units [%d] cannot exceed %d", conv.I64(flags.Units), core.MaxAppUnits)
 	}
 
-	if uint16(*flags.Units) > core.MaxAppUnits {
-		return fmt.Errorf("Units cannot exceed %d", core.MaxAppUnits)
-	}
-
-	if *flags.CPU > core.MaxAppCPU {
-		return fmt.Errorf("CPU cannot exceed %d", core.MaxAppCPU)
+	if conv.F64(flags.CPU) > core.MaxAppCPU {
+		return fmt.Errorf("CPU [%.2f] cannot exceed %d", conv.F64(flags.CPU), core.MaxAppCPU)
 	}
 
 	if !utils.IsBlank(conv.S(flags.Memory)) && !core.SizeExpressionRE.MatchString(conv.S(flags.Memory)) {

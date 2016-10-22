@@ -9,6 +9,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterdelete"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterstatus"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/create"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/delete"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/deploy"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
@@ -17,7 +18,7 @@ import (
 
 const (
 	appName = "coldbrew"
-	appHelp = "(some application description goes here)"
+	appHelp = "(application description goes here)"
 )
 
 type CLIApp struct {
@@ -31,38 +32,11 @@ func main() {
 	kingpinApp.Version(Version)
 	globalFlags := flags.NewGlobalFlags(kingpinApp)
 
-	cmds := make(map[string]commands.Command)
-
 	// register commands
-	{
-		// deploy
-		deployCommand := &deploy.Command{}
-		kpDeployCommand := deployCommand.Init(kingpinApp, globalFlags)
-		cmds[kpDeployCommand.FullCommand()] = deployCommand
-
-		// create / init
-		createCommand := &create.Command{}
-		kpCreateCommand := createCommand.Init(kingpinApp, globalFlags)
-		cmds[kpCreateCommand.FullCommand()] = createCommand
-
-		// cluster-create
-		clusterCreateCommand := &clustercreate.Command{}
-		kpClusterCreateCommand := clusterCreateCommand.Init(kingpinApp, globalFlags)
-		cmds[kpClusterCreateCommand.FullCommand()] = clusterCreateCommand
-
-		// cluster-status
-		clusterStatusCommand := &clusterstatus.Command{}
-		kpClusterStatusCommand := clusterStatusCommand.Init(kingpinApp, globalFlags)
-		cmds[kpClusterStatusCommand.FullCommand()] = clusterStatusCommand
-
-		// cluster-delete
-		clusterDeleteCommand := &clusterdelete.Command{}
-		kpClusterDeleteCommand := clusterDeleteCommand.Init(kingpinApp, globalFlags)
-		cmds[kpClusterDeleteCommand.FullCommand()] = clusterDeleteCommand
-	}
+	registeredCommands := registerCommands(kingpinApp, globalFlags)
 
 	// parse CLI inputs
-	cmd, err := kingpinApp.Parse(os.Args[1:])
+	command, err := kingpinApp.Parse(os.Args[1:])
 	if err != nil {
 		console.Errorf(err.Error())
 		os.Exit(5)
@@ -72,15 +46,32 @@ func main() {
 	console.EnableDebugf(*globalFlags.Verbose, "")
 
 	// execute command
-	for n, c := range cmds {
-		if n == cmd {
-			if err := c.Run(); err != nil {
-				console.Errorf("Error: %s\n", err.Error())
-				os.Exit(40)
-			}
-			os.Exit(0)
+	if c := registeredCommands[command]; c != nil {
+		if err := c.Run(); err != nil {
+			console.Errorf("Error: %s\n", err.Error())
+			os.Exit(40)
 		}
+		os.Exit(0)
+	} else {
+		panic(fmt.Errorf("Unknown command: %s", command))
+	}
+}
+
+func registerCommands(ka *kingpin.Application, globalFlags *flags.GlobalFlags) map[string]commands.Command {
+	registeredCommands := make(map[string]commands.Command)
+
+	cmds := []commands.Command{
+		&create.Command{},
+		&deploy.Command{},
+		&delete.Command{},
+		&clustercreate.Command{},
+		&clusterstatus.Command{},
+		&clusterdelete.Command{},
+	}
+	for _, c := range cmds {
+		kpc := c.Init(ka, globalFlags)
+		registeredCommands[kpc.FullCommand()] = c
 	}
 
-	panic(fmt.Errorf("Unknown command: %s", cmd))
+	return registeredCommands
 }

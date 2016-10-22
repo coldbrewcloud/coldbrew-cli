@@ -230,3 +230,14 @@ func (c *Client) UpdateService(clusterName, serviceName, taskDefARN string, desi
 
 	return res.Service, nil
 }
+
+func (c *Client) DeleteService(clusterName, serviceName string) error {
+	params := &_ecs.DeleteServiceInput{
+		Cluster: _aws.String(clusterName),
+		Service: _aws.String(serviceName),
+	}
+
+	_, err := c.svc.DeleteService(params)
+
+	return err
+}

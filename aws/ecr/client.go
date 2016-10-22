@@ -83,3 +83,14 @@ func (c *Client) GetDockerLogin() (string, string, string, error) {
 
 	return tokens[0], tokens[1], *res.AuthorizationData[0].ProxyEndpoint, nil
 }
+
+func (c *Client) DeleteRepository(repoName string) error {
+	params := &_ecr.DeleteRepositoryInput{
+		Force:          _aws.Bool(true),
+		RepositoryName: _aws.String(repoName),
+	}
+
+	_, err := c.svc.DeleteRepository(params)
+
+	return err
+}

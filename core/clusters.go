@@ -1,8 +1,8 @@
-package clusters
+package core
 
 import "fmt"
 
-const defaultPrefix = "coldbrew_"
+const defaultPrefix = "coldbrew-"
 
 const (
 	EC2AssumeRolePolicy = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action": "sts:AssumeRole"}]}`
@@ -17,23 +17,23 @@ func DefaultECSClusterName(clusterName string) string {
 }
 
 func DefaultLaunchConfigurationName(clusterName string) string {
-	return fmt.Sprintf("%s%s_lc", defaultPrefix, clusterName)
+	return fmt.Sprintf("%s%s-lc", defaultPrefix, clusterName)
 }
 
 func DefaultAutoScalingGroupName(clusterName string) string {
-	return fmt.Sprintf("%s%s_asg", defaultPrefix, clusterName)
+	return fmt.Sprintf("%s%s-asg", defaultPrefix, clusterName)
 }
 
 func DefaultInstanceProfileName(clusterName string) string {
-	return fmt.Sprintf("%s%s_instance_profile", defaultPrefix, clusterName)
+	return fmt.Sprintf("%s%s-instance-profile", defaultPrefix, clusterName)
 }
 
 func DefaultInstanceSecurityGroupName(clusterName string) string {
-	return fmt.Sprintf("%s%s_instance_sg", defaultPrefix, clusterName)
+	return fmt.Sprintf("%s%s-instance-sg", defaultPrefix, clusterName)
 }
 
 func DefaultECSServiceRoleName(clusterName string) string {
-	return fmt.Sprintf("%s%s_ecs_service_role", defaultPrefix, clusterName)
+	return fmt.Sprintf("%s%s-ecs-service-role", defaultPrefix, clusterName)
 }
 
 func DefaultContainerInstanceType() string {

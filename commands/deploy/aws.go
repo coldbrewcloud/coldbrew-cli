@@ -4,20 +4,19 @@ import (
 	"fmt"
 	"math"
 
-	"strings"
-
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecs"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/elb"
+	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
-	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
+	"github.com/d5/cc"
 )
 
 func (c *Command) isClusterAvailable(clusterName string) error {
 	// check ECS cluster
-	ecsClusterName := clusters.DefaultECSClusterName(clusterName)
+	ecsClusterName := core.DefaultECSClusterName(clusterName)
 	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
@@ -27,7 +26,7 @@ func (c *Command) isClusterAvailable(clusterName string) error {
 	}
 
 	// check ECS service role
-	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(clusterName)
+	ecsServiceRoleName := core.DefaultECSServiceRoleName(clusterName)
 	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error())
@@ -91,16 +90,17 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 		}
 	}
 
-	ecsTaskDefinitionName := conv.S(c.conf.Name)
-	ecsTaskContainerName := conv.S(c.conf.Name)
+	ecsTaskDefinitionName := core.DefaultECSTaskDefinitionName(conv.S(c.conf.Name))
+	ecsTaskContainerName := core.DefaultECSTaskMainContainerName(conv.S(c.conf.Name))
 	cpu := uint64(math.Ceil(conv.F64(c.conf.CPU) * 1024.0))
 	memory, err := core.ParseSizeExpression(conv.S(c.conf.Memory))
 	if err != nil {
 		return "", err
 	}
-	memory /= 1024
+	memory /= 1000 * 1000
 	useCloudWatchLogs := false
 
+	console.Printf("Updating ECS Task Definition [%s]...\n", cc.Green(ecsTaskContainerName))
 	ecsTaskDef, err := c.awsClient.ECS().UpdateTaskDefinition(
 		ecsTaskDefinitionName,
 		dockerImageFullURI,
@@ -118,15 +118,15 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 }
 
 func (c *Command) createOrUpdateECSService(ecsTaskDefinitionARN string) error {
-	ecsClusterName := clusters.DefaultECSClusterName(conv.S(c.conf.ClusterName))
-	ecsServiceName := conv.S(c.conf.Name)
+	ecsClusterName := core.DefaultECSClusterName(conv.S(c.conf.ClusterName))
+	ecsServiceName := core.DefaultECSServiceName(conv.S(c.conf.Name))
 
 	ecsService, err := c.awsClient.ECS().RetrieveService(ecsClusterName, ecsServiceName)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve ECS Service [%s/%s]: %s", ecsClusterName, ecsServiceName, err.Error())
 	}
 
-	if ecsService != nil && conv.S(ecsService.Status) != "INACTIVE" {
+	if ecsService != nil && conv.S(ecsService.Status) == "ACTIVE" {
 		// TODO: handle the case where configuration requires changes in ECS Service
 		// E.g. ask user to re-create the Service
 		if err := c.updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN); err != nil {
@@ -142,17 +142,16 @@ func (c *Command) createOrUpdateECSService(ecsTaskDefinitionARN string) error {
 }
 
 func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN string) error {
-	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(conv.S(c.conf.ClusterName))
+	ecsServiceRoleName := core.DefaultECSServiceRoleName(conv.S(c.conf.ClusterName))
 	ecsTaskContainerName := conv.S(c.conf.Name)
 	ecsTaskContainerPort := conv.U16(c.conf.Port)
 
 	var loadBalancers []*ecs.LoadBalancer
-	if conv.U16(c.conf.Port) > 0 && c.conf.LoadBalancer != nil {
+	if conv.U16(c.conf.Port) > 0 && c.conf.LoadBalancer.Enabled {
 		// prepare load balancer (create one if needed)
 		loadBalancer, err := c.prepareELBLoadBalancer(
 			conv.S(c.conf.AWS.ELBLoadBalancerName),
 			conv.S(c.conf.AWS.ELBTargetGroupName),
-			conv.S(c.conf.AWS.ELBSecurityGroup),
 			conv.U16(c.conf.LoadBalancer.Port),
 			ecsServiceRoleName,
 			ecsTaskContainerName,
@@ -164,6 +163,7 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 		loadBalancers = []*ecs.LoadBalancer{loadBalancer}
 	}
 
+	console.Printf("Creating ECS Service [%s]...\n", cc.Green(ecsServiceName))
 	_, err := c.awsClient.ECS().CreateService(
 		ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units),
 		loadBalancers, ecsServiceRoleName)
@@ -174,22 +174,23 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 	return nil
 }
 
-func (c *Command) prepareELBLoadBalancer(elbLoadBalancerName, elbTargetGroupName, elbLoadBalancerSecurityGroup string, elbPort uint16, ecsServiceRoleName, ecsTaskContainerName string, ecsTaskContainerPort uint16) (*ecs.LoadBalancer, error) {
+func (c *Command) prepareELBLoadBalancer(elbLoadBalancerName, elbTargetGroupName string, elbPort uint16, ecsServiceRoleName, ecsTaskContainerName string, ecsTaskContainerPort uint16) (*ecs.LoadBalancer, error) {
 	_, vpcID, err := c.globalFlags.GetAWSRegionAndVPCID()
 	if err != nil {
 		return nil, err
 	}
 
-	elbDesc, err := c.awsClient.ELB().RetrieveLoadBalancer(elbLoadBalancerName)
+	elbLoadBalancer, err := c.awsClient.ELB().RetrieveLoadBalancer(elbLoadBalancerName)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
 	}
-	if elbDesc != nil {
-		elbTargetGroup, err := c.awsClient.ELB().RetrieveTargetGroup(
-			conv.S(elbDesc.LoadBalancerArn),
-			elbTargetGroupName)
+	if elbLoadBalancer != nil {
+		elbTargetGroup, err := c.awsClient.ELB().RetrieveTargetGroupByName(elbTargetGroupName)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to retrieve ELB Target Group [%s]: %s", elbTargetGroupName, err.Error())
+		}
+		if elbTargetGroup == nil {
+			return nil, fmt.Errorf("ELB Target Group [%s] was not found.", elbTargetGroupName)
 		}
 
 		return &ecs.LoadBalancer{
@@ -205,39 +206,13 @@ func (c *Command) prepareELBLoadBalancer(elbLoadBalancerName, elbTargetGroupName
 		}
 
 		// create security group for ELB (if needed)
-		if utils.IsBlank(elbLoadBalancerSecurityGroup) {
-
-			securityGroupName := fmt.Sprintf("elb-%s", elbLoadBalancerName)
-			elbLoadBalancerSecurityGroup, err = c.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, vpcID)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to create EC2 Security Group [%s]: %s", securityGroupName, err.Error())
-			}
-			err = c.awsClient.EC2().AddInboundToSecurityGroup(
-				elbLoadBalancerSecurityGroup,
-				ec2.SecurityGroupProtocolTCP,
-				elbPort, elbPort, "0.0.0.0/0")
-			if err != nil {
-				return nil, fmt.Errorf("Failed to add incoming rule to EC2 Security Group [%s]: %s", elbLoadBalancerSecurityGroup, err.Error())
-			}
-
-		} else {
-			// make sure specified Security Group actually exists
-			if strings.HasPrefix(elbLoadBalancerSecurityGroup, "sg-") {
-				securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroup(elbLoadBalancerSecurityGroup)
-				if securityGroup == nil || err != nil {
-					return nil, fmt.Errorf("EC2 Security Group [%s] was not found.", elbLoadBalancerSecurityGroup)
-				}
-			} else {
-				securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(elbLoadBalancerSecurityGroup)
-				if securityGroup == nil || err != nil {
-					return nil, fmt.Errorf("EC2 Security Group [%s] was not found.", elbLoadBalancerSecurityGroup)
-				}
-				elbLoadBalancerSecurityGroup = conv.S(securityGroup.GroupId)
-			}
+		elbSecurityGroupID, err := c.prepareLoadBalancerSecurityGroup(vpcID, elbPort)
+		if err != nil {
+			return nil, err
 		}
 
 		// create ELB load balancer
-		elbLoadBalancerARN, err := c.createELBLoadBalancer(elbLoadBalancerName, vpcID, elbLoadBalancerSecurityGroup)
+		elbLoadBalancerARN, err := c.createELBLoadBalancer(elbLoadBalancerName, vpcID, elbSecurityGroupID)
 		if err != nil {
 			return nil, err
 		}
@@ -305,10 +280,75 @@ func (c *Command) createELBLoadBalancer(name, vpcID, securityGroupID string) (st
 }
 
 func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN string) error {
+	console.Printf("Updating ECS Service [%s]...\n", cc.Green(ecsServiceName))
 	_, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units))
 	if err != nil {
 		return fmt.Errorf("Failed to update ECS service [%s/%s]: %s", ecsClusterName, ecsServiceName, err.Error())
 	}
 
 	return nil
+}
+
+func (c *Command) prepareLoadBalancerSecurityGroup(vpcID string, elbPort uint16) (string, error) {
+	if utils.IsBlank(conv.S(c.conf.AWS.ELBSecurityGroup)) {
+		// use default security group
+		securityGroupName := fmt.Sprintf("%s-sg", conv.S(c.conf.AWS.ELBSecurityGroup))
+
+		// test if default security group exists or not
+		securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByNameOrID(securityGroupName)
+		if err != nil {
+			return "", fmt.Errorf("Failed to retrieve EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+		}
+
+		// default security group exists, return its group ID
+		if securityGroup != nil {
+			return conv.S(securityGroup.GroupId), nil
+		}
+
+		// create default security group
+		securityGroupID, err := c.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, vpcID)
+		if err != nil {
+			return "", fmt.Errorf("Failed to create EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+		}
+
+		// add load balancer inbound rule
+		err = c.awsClient.EC2().AddInboundToSecurityGroup(
+			securityGroupID,
+			ec2.SecurityGroupProtocolTCP,
+			elbPort, elbPort, "0.0.0.0/0")
+		if err != nil {
+			return "", fmt.Errorf("Failed to add inbound rule to EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+		}
+
+		// add inbound rule to ECS instance security group
+		ecsInstancesSecurityGroupName := core.DefaultInstanceSecurityGroupName(conv.S(c.conf.ClusterName))
+		ecsInstancesSecurityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(ecsInstancesSecurityGroupName)
+		if err != nil {
+			return "", fmt.Errorf("Failed to retrieve EC2 Security Group [%s]: %s", ecsInstancesSecurityGroupName, err.Error())
+		}
+		if ecsInstancesSecurityGroup == nil {
+			return "", fmt.Errorf("EC2 Security Group [%s] for ECS Container Instances was not found.", ecsInstancesSecurityGroupName)
+		}
+		err = c.awsClient.EC2().AddInboundToSecurityGroup(
+			conv.S(ecsInstancesSecurityGroup.GroupId),
+			ec2.SecurityGroupProtocolTCP,
+			0, 0, securityGroupID)
+		if err != nil {
+			return "", fmt.Errorf("Failed to add inbound rule to EC2 Security Group [%s]: %s", ecsInstancesSecurityGroupName, err.Error())
+		}
+
+		return securityGroupID, nil
+
+	} else {
+		// make sure user-specified Security Group does exist
+		securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByNameOrID(conv.S(c.conf.AWS.ELBSecurityGroup))
+		if err != nil {
+			return "", fmt.Errorf("Failed to retrieve EC2 Security Group [%s]: %s", conv.S(c.conf.AWS.ELBSecurityGroup), err.Error())
+		}
+		if securityGroup == nil {
+			return "", fmt.Errorf("EC2 Security Group [%s] was not found.", conv.S(c.conf.AWS.ELBSecurityGroup))
+		}
+
+		return conv.S(securityGroup.GroupId), nil
+	}
 }

@@ -1,22 +1,23 @@
 package config
 
 type Config struct {
-	Name         *string             `json:"name,omitempty" yaml:"name,omitempty"`
-	ClusterName  *string             `json:"cluster,omitempty" yaml:"cluster,omitempty"`
-	Port         *uint16             `json:"port,omitempty" yaml:"port,omitempty"`
-	CPU          *float64            `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	Memory       *string             `json:"memory,omitempty" yaml:"memory,omitempty"`
-	Units        *uint16             `json:"units,omitempty" yaml:"units,omitempty"`
-	Env          map[string]string   `json:"env,omitempty" yaml:"env,omitempty"`
-	LoadBalancer *ConfigLoadBalancer `json:"load_balancer,omitempty" yaml:"load_balancer,omitempty"`
-	AWS          *ConfigAWS          `json:"aws,omitempty" yaml:"aws,omitempty"`
-	Docker       *ConfigDocker       `json:"docker,omitempty" yaml:"docker,omitempty"`
+	Name         *string            `json:"name,omitempty" yaml:"name,omitempty"`
+	ClusterName  *string            `json:"cluster,omitempty" yaml:"cluster,omitempty"`
+	Port         *uint16            `json:"port,omitempty" yaml:"port,omitempty"`
+	CPU          *float64           `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	Memory       *string            `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Units        *uint16            `json:"units,omitempty" yaml:"units,omitempty"`
+	Env          map[string]string  `json:"env,omitempty" yaml:"env,omitempty"`
+	LoadBalancer ConfigLoadBalancer `json:"load_balancer,omitempty" yaml:"load_balancer,omitempty"`
+	AWS          ConfigAWS          `json:"aws,omitempty" yaml:"aws,omitempty"`
+	Docker       ConfigDocker       `json:"docker,omitempty" yaml:"docker,omitempty"`
 }
 
 type ConfigLoadBalancer struct {
-	IsHTTPS     *bool                          `json:"https,omitempty" yaml:"https,omitempty"`
-	Port        *uint16                        `json:"port,omitempty" yaml:"port,omitempty"`
-	HealthCheck *ConfigLoadBalancerHealthCheck `json:"health_check,omitempty" yaml:"health_check,omitempty"`
+	Enabled     *bool                         `json:"enabled" yaml:"enabled"`
+	IsHTTPS     *bool                         `json:"https,omitempty" yaml:"https,omitempty"`
+	Port        *uint16                       `json:"port,omitempty" yaml:"port,omitempty"`
+	HealthCheck ConfigLoadBalancerHealthCheck `json:"health_check,omitempty" yaml:"health_check,omitempty"`
 }
 
 type ConfigLoadBalancerHealthCheck struct {

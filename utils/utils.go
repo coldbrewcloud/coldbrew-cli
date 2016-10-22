@@ -25,7 +25,7 @@ func AsMap(v interface{}) (map[string]interface{}, error) {
 }
 
 func ToJSON(v interface{}) string {
-	data, err := json.Marshal(v)
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return "(error) " + err.Error()
 	}

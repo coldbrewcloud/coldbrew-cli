@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
-	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -58,11 +58,11 @@ echo ECS_CLUSTER=%s >> /etc/ecs/ecs.config`, ecsClusterName)
 }
 
 func (c *Command) createDefaultInstanceProfile(profileName string) (string, error) {
-	_, err := c.awsClient.IAM().CreateRole(clusters.EC2AssumeRolePolicy, profileName)
+	_, err := c.awsClient.IAM().CreateRole(core.EC2AssumeRolePolicy, profileName)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create IAM Role [%s]: %s", profileName, err.Error())
 	}
-	if err := c.awsClient.IAM().AttachRolePolicy(clusters.AdministratorAccessPolicyARN, profileName); err != nil {
+	if err := c.awsClient.IAM().AttachRolePolicy(core.AdministratorAccessPolicyARN, profileName); err != nil {
 		return "", fmt.Errorf("Failed to attach policy to IAM Role [%s]: %s", profileName, err.Error())
 	}
 
@@ -81,11 +81,11 @@ func (c *Command) createDefaultInstanceProfile(profileName string) (string, erro
 }
 
 func (c *Command) createECSServiceRole(roleName string) (string, error) {
-	iamRole, err := c.awsClient.IAM().CreateRole(clusters.ECSAssumeRolePolicy, roleName)
+	iamRole, err := c.awsClient.IAM().CreateRole(core.ECSAssumeRolePolicy, roleName)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create IAM Role [%s]: %s", roleName, err.Error())
 	}
-	if err := c.awsClient.IAM().AttachRolePolicy(clusters.ECSServiceRolePolicyARN, roleName); err != nil {
+	if err := c.awsClient.IAM().AttachRolePolicy(core.ECSServiceRolePolicyARN, roleName); err != nil {
 		return "", fmt.Errorf("Failed to attach policy to IAM Role [%s]: %s", roleName, err.Error())
 	}
 

@@ -191,6 +191,32 @@ func (c *Client) RetrieveSecurityGroupByName(name string) (*_ec2.SecurityGroup, 
 	}
 }
 
+func (c *Client) RetrieveSecurityGroupByNameOrID(nameOrID string) (*_ec2.SecurityGroup, error) {
+	params := &_ec2.DescribeSecurityGroupsInput{
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("group-name"),
+				Values: _aws.StringSlice([]string{nameOrID}),
+			},
+			{
+				Name:   _aws.String("group-id"),
+				Values: _aws.StringSlice([]string{nameOrID}),
+			},
+		},
+	}
+
+	res, err := c.svc.DescribeSecurityGroups(params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.SecurityGroups) > 0 {
+		return res.SecurityGroups[0], nil
+	} else {
+		return nil, nil
+	}
+}
+
 func (c *Client) DeleteSecurityGroup(securityGroupID string) error {
 	params := &_ec2.DeleteSecurityGroupInput{
 		GroupId: _aws.String(securityGroupID),

@@ -7,7 +7,6 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
-	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
@@ -47,10 +46,10 @@ func (c *Command) Run() error {
 	deleteAutoScalingGroup := false
 
 	// ECS cluster
-	ecsClusterName := clusters.DefaultECSClusterName(clusterName)
+	ecsClusterName := core.DefaultECSClusterName(clusterName)
 	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
 	}
 	if ecsCluster != nil && conv.S(ecsCluster.Status) != "INACTIVE" {
 		deleteECSCluster = true
@@ -58,10 +57,10 @@ func (c *Command) Run() error {
 	}
 
 	// ECS service role
-	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(clusterName)
+	ecsServiceRoleName := core.DefaultECSServiceRoleName(clusterName)
 	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error())
 	}
 	if ecsServiceRole != nil {
 		deleteECSServiceRole = true
@@ -69,10 +68,10 @@ func (c *Command) Run() error {
 	}
 
 	// launch configuration
-	lcName := clusters.DefaultLaunchConfigurationName(clusterName)
+	lcName := core.DefaultLaunchConfigurationName(clusterName)
 	launchConfiguration, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(lcName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error()))
+		return core.ExitWithErrorString("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error())
 	}
 	if launchConfiguration != nil {
 		deleteLaunchConfiguration = true
@@ -80,10 +79,10 @@ func (c *Command) Run() error {
 	}
 
 	// auto scaling group
-	asgName := clusters.DefaultAutoScalingGroupName(clusterName)
+	asgName := core.DefaultAutoScalingGroupName(clusterName)
 	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error())
 	}
 	if autoScalingGroup != nil && utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		deleteAutoScalingGroup = true
@@ -91,10 +90,10 @@ func (c *Command) Run() error {
 	}
 
 	// instance profile
-	instanceProfileName := clusters.DefaultInstanceProfileName(clusterName)
+	instanceProfileName := core.DefaultInstanceProfileName(clusterName)
 	instanceProfile, err := c.awsClient.IAM().RetrieveInstanceProfile(instanceProfileName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve Instance Profile [%s]: %s", instanceProfileName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve Instance Profile [%s]: %s", instanceProfileName, err.Error())
 	}
 	if instanceProfile != nil {
 		deleteInstanceProfile = true
@@ -102,10 +101,10 @@ func (c *Command) Run() error {
 	}
 
 	// instance security group
-	sgName := clusters.DefaultInstanceSecurityGroupName(clusterName)
+	sgName := core.DefaultInstanceSecurityGroupName(clusterName)
 	securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(sgName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve Security Group [%s]: %s", sgName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve Security Group [%s]: %s", sgName, err.Error())
 	}
 	if securityGroup != nil {
 		deleteInstanceSecurityGroups = true
@@ -129,7 +128,7 @@ func (c *Command) Run() error {
 
 		if err := c.scaleDownAutoScalingGroup(autoScalingGroup); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(cc.Red("Error: "), err.Error())
+				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
 			}
@@ -137,7 +136,7 @@ func (c *Command) Run() error {
 			console.Printf("Deleting Auto Scaling Group [%s]... %s\n", cc.Red(asgName), cc.BlackH("(this may take some time)"))
 			if err := c.awsClient.AutoScaling().DeleteAutoScalingGroup(asgName, true); err != nil {
 				if conv.B(c.commandFlags.ContinueOnError) {
-					console.Errorln(cc.Red("Error: "), err.Error())
+					console.Errorln(cc.Red("Error:"), err.Error())
 				} else {
 					return core.ExitWithError(err)
 				}
@@ -152,7 +151,7 @@ func (c *Command) Run() error {
 		if err := c.awsClient.AutoScaling().DeleteLaunchConfiguration(lcName); err != nil {
 			err = fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(cc.Red("Error: "), err.Error())
+				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
 			}
@@ -165,7 +164,7 @@ func (c *Command) Run() error {
 
 		if err := c.deleteDefaultInstanceProfile(instanceProfileName); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(cc.Red("Error: "), err.Error())
+				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
 			}
@@ -179,7 +178,7 @@ func (c *Command) Run() error {
 		if err := c.awsClient.EC2().DeleteSecurityGroup(conv.S(securityGroup.GroupId)); err != nil {
 			err = fmt.Errorf("Failed to delete Security Group [%s]: %s", sgName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(cc.Red("Error: "), err.Error())
+				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
 			}
@@ -193,7 +192,7 @@ func (c *Command) Run() error {
 		if err := c.awsClient.ECS().DeleteCluster(ecsClusterName); err != nil {
 			err = fmt.Errorf("Failed to delete ECS Cluster [%s]: %s", ecsServiceRoleName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(cc.Red("Error: "), err.Error())
+				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
 			}
@@ -206,7 +205,7 @@ func (c *Command) Run() error {
 
 		if err := c.deleteECSServiceRole(ecsServiceRoleName); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(cc.Red("Error: "), err.Error())
+				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
 			}

@@ -1,13 +1,11 @@
 package clusterstatus
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
-	"github.com/coldbrewcloud/coldbrew-cli/core/clusters"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
@@ -58,10 +56,10 @@ func (c *Command) Run() error {
 	showContainerInstanceDetails := false
 
 	// launch configuration
-	launchConfigName := clusters.DefaultLaunchConfigurationName(clusterName)
+	launchConfigName := core.DefaultLaunchConfigurationName(clusterName)
 	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error())
 	}
 	if launchConfig == nil {
 		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(launchConfigName), cc.Red("(not found)"))
@@ -71,10 +69,10 @@ func (c *Command) Run() error {
 	}
 
 	// auto scaling group
-	autoScalingGroupName := clusters.DefaultAutoScalingGroupName(clusterName)
+	autoScalingGroupName := core.DefaultAutoScalingGroupName(clusterName)
 	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
 	}
 	if autoScalingGroup == nil {
 		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(autoScalingGroupName), cc.Red("(not found)"))
@@ -94,10 +92,10 @@ func (c *Command) Run() error {
 	showECSClusterDetails := false
 
 	// ecs cluster
-	ecsClusterName := clusters.DefaultECSClusterName(clusterName)
+	ecsClusterName := core.DefaultECSClusterName(clusterName)
 	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
 	}
 	if ecsCluster == nil || conv.S(ecsCluster.Status) == "INACTIVE" {
 		console.Println(" ", cc.BlackH("Cluster"), cc.Green(ecsClusterName), cc.Red("(not found)"))
@@ -107,10 +105,10 @@ func (c *Command) Run() error {
 	}
 
 	// ecs service role
-	ecsServiceRoleName := clusters.DefaultECSServiceRoleName(clusterName)
+	ecsServiceRoleName := core.DefaultECSServiceRoleName(clusterName)
 	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error()))
+		return core.ExitWithErrorString("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error())
 	}
 	if ecsServiceRole == nil {
 		console.Println(" ", cc.BlackH("Service Role"), cc.Green(ecsServiceRoleName), cc.Red("(not found)"))
@@ -145,7 +143,7 @@ func (c *Command) Run() error {
 		}
 		securityGroups, err := c.awsClient.EC2().RetrieveSecurityGroups(securityGroupIDs)
 		if err != nil {
-			return core.ExitWithError(fmt.Errorf("Failed to retrieve Security Groups [%s]: %s", strings.Join(securityGroupIDs, ","), err.Error()))
+			return core.ExitWithErrorString("Failed to retrieve Security Groups [%s]: %s", strings.Join(securityGroupIDs, ","), err.Error())
 		}
 		securityGroupNames := []string{}
 		for _, sg := range securityGroups {

@@ -61,7 +61,7 @@ func (c *Command) Run() error {
 	input := c.askQuestion("Does your application expose TCP port? (Enter 0 if not)", "Port", fmt.Sprintf("%d", conv.U16(defConf.Port)))
 	parsed, err := strconv.ParseUint(input, 10, 16)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Invalid port number [%s]", input))
+		return core.ExitWithErrorString("Invalid port number [%s]", input)
 	}
 	conf.Port = conv.U16P(uint16(parsed))
 
@@ -69,7 +69,7 @@ func (c *Command) Run() error {
 	input = c.askQuestion("CPU allocation per unit (1core = 1.0)", "CPU", fmt.Sprintf("%.2f", conv.F64(defConf.CPU)))
 	parsedF, err := strconv.ParseFloat(input, 64)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Invalid CPU [%s]", input))
+		return core.ExitWithErrorString("Invalid CPU [%s]", input)
 	}
 	conf.CPU = conv.F64P(parsedF)
 
@@ -80,7 +80,7 @@ func (c *Command) Run() error {
 	input = c.askQuestion("Number of application units", "Units", fmt.Sprintf("%d", conv.U16(defConf.Units)))
 	parsed, err = strconv.ParseUint(input, 10, 16)
 	if err != nil {
-		return core.ExitWithError(fmt.Errorf("Invalid units [%s]", input))
+		return core.ExitWithErrorString("Invalid units [%s]", input)
 	}
 	conf.Units = conv.U16P(uint16(parsed))
 
@@ -96,7 +96,7 @@ func (c *Command) Run() error {
 		input := c.askQuestion("Load balancer port number", "Load Balancer Port", fmt.Sprintf("%d", conv.U16(defConf.Port)))
 		parsed, err := strconv.ParseUint(input, 10, 16)
 		if err != nil || parsed == 0 {
-			return core.ExitWithError(fmt.Errorf("Invalid port number [%s]", input))
+			return core.ExitWithErrorString("Invalid port number [%s]", input)
 		}
 		conf.LoadBalancer.Port = conv.U16P(uint16(parsed))
 
@@ -109,14 +109,14 @@ func (c *Command) Run() error {
 		input = c.askQuestion("Number of consecutive health check successes required before considering an unhealthy instance to healthy.", "Healthy Limits", fmt.Sprintf("%d", conv.U16(defConf.LoadBalancer.HealthCheck.HealthyLimit)))
 		parsed, err = strconv.ParseUint(input, 10, 16)
 		if err != nil {
-			return core.ExitWithError(fmt.Errorf("Invalid number [%s]", input))
+			return core.ExitWithErrorString("Invalid number [%s]", input)
 		}
 		conf.LoadBalancer.HealthCheck.HealthyLimit = conv.U16P(uint16(parsed))
 
 		input = c.askQuestion("Number of consecutive health check failures required before considering an instance unhealthy.", "Unhealthy Limits", fmt.Sprintf("%d", conv.U16(defConf.LoadBalancer.HealthCheck.UnhealthyLimit)))
 		parsed, err = strconv.ParseUint(input, 10, 16)
 		if err != nil {
-			return core.ExitWithError(fmt.Errorf("Invalid number [%s]", input))
+			return core.ExitWithErrorString("Invalid number [%s]", input)
 		}
 		conf.LoadBalancer.HealthCheck.UnhealthyLimit = conv.U16P(uint16(parsed))
 	}
@@ -162,18 +162,18 @@ func (c *Command) Run() error {
 	case flags.GlobalFlagsConfigFileFormatYAML:
 		configData, err = conf.ToYAML()
 		if err != nil {
-			return core.ExitWithError(fmt.Errorf("Failed to format configuration in YAML: %s", err.Error()))
+			return core.ExitWithErrorString("Failed to format configuration in YAML: %s", err.Error())
 		}
 	case flags.GlobalFlagsConfigFileFormatJSON:
 		configData, err = conf.ToJSONWithIndent()
 		if err != nil {
-			return core.ExitWithError(fmt.Errorf("Failed to format configuration in JSON: %s", err.Error()))
+			return core.ExitWithErrorString("Failed to format configuration in JSON: %s", err.Error())
 		}
 	default:
-		return core.ExitWithError(fmt.Errorf("Unsupported configuration file format [%s]", configFileFormat))
+		return core.ExitWithErrorString("Unsupported configuration file format [%s]", configFileFormat)
 	}
 	if err := ioutil.WriteFile(configFile, configData, 0644); err != nil {
-		return core.ExitWithError(fmt.Errorf("Failed to write configuration file [%s]: %s", configFile, err.Error()))
+		return core.ExitWithErrorString("Failed to write configuration file [%s]: %s", configFile, err.Error())
 	}
 	console.Println("Configuration file was successfully created:", cc.Green(configFile))
 
