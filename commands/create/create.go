@@ -10,10 +10,10 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
-	"github.com/d5/cc"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -43,8 +43,12 @@ func (c *Command) Run() error {
 	// AWS client
 	c.awsClient = c.globalFlags.GetAWSClient()
 
+	if conv.B(c.commandFlags.Default) {
+		console.Info("Generating default configuration...")
+	}
+
 	// default config
-	defConf := config.DefaultConfig(appDirectory)
+	defConf := config.DefaultConfig(core.DefaultAppName(appDirectory))
 
 	conf := &config.Config{}
 
@@ -171,16 +175,18 @@ func (c *Command) Run() error {
 	if err := ioutil.WriteFile(configFile, configData, 0644); err != nil {
 		return console.ExitWithErrorString("Failed to write configuration file [%s]: %s", configFile, err.Error())
 	}
-	console.Println("Configuration file was successfully created:", cc.Green(configFile))
+
+	console.Blank()
+	console.Info(fmt.Sprintf("Configuration file created: %s", console.ColorFnResource(configFile)))
 
 	return nil
 }
 
 func (c *Command) askQuestion(description, question, defaultValue string) string {
 	if conv.B(c.commandFlags.Default) {
-		console.Println(cc.Blue(question)+":", cc.Green(defaultValue))
+		console.DetailWithResource(question, defaultValue)
 		return defaultValue
 	}
 
-	return console.AskQuestion(fmt.Sprintf("%s\n%s", cc.BlackH(description), cc.Blue(question)), defaultValue)
+	return console.AskQuestionWithNote(question, defaultValue, description)
 }

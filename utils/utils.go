@@ -44,6 +44,14 @@ func FileExists(path string) bool {
 	return err == nil
 }
 
+func IsDirectory(path string) (bool, error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return stat.IsDir(), nil
+}
+
 func RetryOnAWSErrorCode(fn func() error, retryErrorCodes []string, interval, timeout time.Duration) error {
 	return Retry(func() (bool, error) {
 		err := fn()

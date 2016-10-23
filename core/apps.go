@@ -1,6 +1,10 @@
 package core
 
-import "path/filepath"
+import (
+	"path/filepath"
+
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
+)
 
 func DefaultECSTaskDefinitionName(appName string) string {
 	return appName
@@ -15,9 +19,18 @@ func DefaultECSTaskMainContainerName(appName string) string {
 }
 
 func DefaultAppName(appDirectoryOrConfigFile string) string {
-	base := filepath.Base(filepath.Dir(appDirectoryOrConfigFile))
+	isDir, err := utils.IsDirectory(appDirectoryOrConfigFile)
+	if err != nil {
+		return "app1"
+	}
+	if !isDir {
+		appDirectoryOrConfigFile = filepath.Dir(appDirectoryOrConfigFile)
+	}
+
+	base := filepath.Base(appDirectoryOrConfigFile)
 	if base == "/" {
 		return "app1"
 	}
+
 	return base
 }
