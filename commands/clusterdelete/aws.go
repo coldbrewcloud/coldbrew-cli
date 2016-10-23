@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -37,25 +38,19 @@ func (c *Command) scaleDownAutoScalingGroup(autoScalingGroup *autoscaling.Group)
 		return fmt.Errorf("Failed to change Auto Scaling Group [%s] desired capacity to 0: %s", asgName, err.Error())
 	}
 
-	maxTries := 300 // ~ 5-6 mins
-	for i := 0; i < maxTries; i++ {
+	return utils.Retry(func() (bool, error) {
 		asg, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(asgName)
 		if err != nil {
-			return fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error())
+			return false, fmt.Errorf("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error())
 		}
-
 		if asg == nil {
-			return fmt.Errorf("Auto Scaling Group [%s] not found", asgName)
+			return false, fmt.Errorf("Auto Scaling Group [%s] not found", asgName)
 		}
-
 		if len(asg.Instances) == 0 {
-			break
+			return false, nil
 		}
-
-		time.Sleep(1 * time.Second)
-	}
-
-	return nil
+		return true, nil
+	}, time.Second, 5*time.Minute)
 }
 
 func (c *Command) deleteECSServiceRole(roleName string) error {

@@ -7,10 +7,10 @@ type Config struct {
 	CPU          *float64           `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory       *string            `json:"memory,omitempty" yaml:"memory,omitempty"`
 	Units        *uint16            `json:"units,omitempty" yaml:"units,omitempty"`
-	Env          map[string]string  `json:"env,omitempty" yaml:"env,omitempty"`
-	LoadBalancer ConfigLoadBalancer `json:"load_balancer,omitempty" yaml:"load_balancer,omitempty"`
-	AWS          ConfigAWS          `json:"aws,omitempty" yaml:"aws,omitempty"`
-	Docker       ConfigDocker       `json:"docker,omitempty" yaml:"docker,omitempty"`
+	Env          map[string]string  `json:"env" yaml:"env"`
+	LoadBalancer ConfigLoadBalancer `json:"load_balancer" yaml:"load_balancer"`
+	AWS          ConfigAWS          `json:"aws" yaml:"aws"`
+	Docker       ConfigDocker       `json:"docker" yaml:"docker"`
 }
 
 type ConfigLoadBalancer struct {
@@ -30,10 +30,10 @@ type ConfigLoadBalancerHealthCheck struct {
 }
 
 type ConfigAWS struct {
-	ELBLoadBalancerName *string `json:"elb_lb_name,omitempty" yaml:"elb_lb_name,omitempty"`
-	ELBTargetGroupName  *string `json:"elb_target_name,omitempty" yaml:"elb_target_name,omitempty"`
-	ELBSecurityGroup    *string `json:"elb_security_group,omitempty" yaml:"elb_security_group,omitempty"`
-	ECRRepositoryName   *string `json:"ecr_repo_name,omitempty" yaml:"ecr_repo_name,omitempty"`
+	ELBLoadBalancerName  *string `json:"elb_name,omitempty" yaml:"elb_name,omitempty"`
+	ELBTargetGroupName   *string `json:"elb_target_group_name,omitempty" yaml:"elb_target_group_name,omitempty"`
+	ELBSecurityGroupName *string `json:"elb_security_group_name,omitempty" yaml:"elb_security_group_name,omitempty"`
+	ECRRepositoryName    *string `json:"ecr_repo_name,omitempty" yaml:"ecr_repo_name,omitempty"`
 }
 
 type ConfigDocker struct {

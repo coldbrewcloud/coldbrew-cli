@@ -48,8 +48,6 @@ func (c *Command) Run() error {
 	defConf := config.DefaultConfig(appDirectory)
 
 	conf := &config.Config{}
-	conf.AWS = new(config.ConfigAWS)
-	conf.Docker = new(config.ConfigDocker)
 
 	// app name
 	conf.Name = conv.SP(c.askQuestion("Name of your application", "App Name", conv.S(defConf.Name)))
@@ -86,8 +84,7 @@ func (c *Command) Run() error {
 
 	// load balancer
 	if conv.B(c.commandFlags.Default) || console.AskConfirm("Does your application need load balancing?", true) {
-		conf.LoadBalancer = new(config.ConfigLoadBalancer)
-		conf.LoadBalancer.HealthCheck = new(config.ConfigLoadBalancerHealthCheck)
+		conf.LoadBalancer.Enabled = conv.BP(true)
 
 		// https
 		conf.LoadBalancer.IsHTTPS = defConf.LoadBalancer.IsHTTPS
@@ -130,7 +127,7 @@ func (c *Command) Run() error {
 		conf.AWS.ELBTargetGroupName = conv.SP(c.askQuestion("ELB target name", "ELB Target Group Name", conv.S(defConf.AWS.ELBTargetGroupName)))
 
 		// elb security group
-		conf.AWS.ELBSecurityGroup = conv.SP(c.askQuestion("Security group ID/name for ELB load balancer. Leave it blank to create default one.", "ELB Security Group", conv.S(defConf.AWS.ELBSecurityGroup)))
+		conf.AWS.ELBSecurityGroupName = conv.SP(c.askQuestion("Security group ID/name for ELB load balancer. Leave it blank to create default one.", "ELB Security Group", conv.S(defConf.AWS.ELBSecurityGroupName)))
 
 		// ecr repo name
 		conf.AWS.ECRRepositoryName = conv.SP(c.askQuestion("ECR repository name", "ECR Namespace", conv.S(defConf.AWS.ECRRepositoryName)))

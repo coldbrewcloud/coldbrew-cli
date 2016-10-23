@@ -9,7 +9,7 @@ type Flags struct {
 
 func NewFlags(kc *kingpin.CmdClause) *Flags {
 	return &Flags{
-		ForceDelete:     kc.Flag("force", "Delete all resources with no confirmation").Short('F').Default("false").Bool(),
+		ForceDelete:     kc.Flag("force", "Delete all resources with no confirmation").Short('y').Default("false").Bool(),
 		ContinueOnError: kc.Flag("continue", "Continue deleting resources on error").Default("false").Bool(),
 	}
 }

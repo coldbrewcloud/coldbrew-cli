@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"regexp"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 var (
@@ -39,4 +42,39 @@ func IsBlank(s string) bool {
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func RetryOnAWSErrorCode(fn func() error, retryErrorCodes []string, interval, timeout time.Duration) error {
+	return Retry(func() (bool, error) {
+		err := fn()
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				for _, rec := range retryErrorCodes {
+					if awsErr.Code() == rec {
+						return true, err
+					}
+				}
+			}
+		}
+		return false, err
+	}, interval, timeout)
+}
+
+func Retry(fn func() (bool, error), interval, timeout time.Duration) error {
+	startTime := time.Now()
+	endTime := startTime.Add(timeout)
+
+	var cont bool
+	var lastErr error
+
+	for time.Now().Before(endTime) {
+		cont, lastErr = fn()
+		if !cont {
+			break
+		}
+
+		time.Sleep(interval)
+	}
+
+	return lastErr
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"time"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
@@ -64,7 +66,7 @@ func (c *Command) Run() error {
 	}
 	if ecsServiceRole != nil {
 		deleteECSServiceRole = true
-		console.Println(" ", cc.BlackH("ECS Service Rike"), cc.Green(ecsServiceRoleName))
+		console.Println(" ", cc.BlackH("ECS Service Role"), cc.Green(ecsServiceRoleName))
 	}
 
 	// launch configuration
@@ -85,8 +87,14 @@ func (c *Command) Run() error {
 		return core.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", asgName, err.Error())
 	}
 	if autoScalingGroup != nil && utils.IsBlank(conv.S(autoScalingGroup.Status)) {
-		deleteAutoScalingGroup = true
-		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName))
+		tags, err := c.awsClient.AutoScaling().RetrieveTagsForAutoScalingGroup(asgName)
+		if err != nil {
+			return core.ExitWithErrorString("Failed to retrieve tags for EC2 Auto Scaling Group [%s]: %s", asgName, err.Error())
+		}
+		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
+			deleteAutoScalingGroup = true
+			console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(asgName))
+		}
 	}
 
 	// instance profile
@@ -107,8 +115,14 @@ func (c *Command) Run() error {
 		return core.ExitWithErrorString("Failed to retrieve Security Group [%s]: %s", sgName, err.Error())
 	}
 	if securityGroup != nil {
-		deleteInstanceSecurityGroups = true
-		console.Println(" ", cc.BlackH("Instance Security Group"), cc.Green(sgName))
+		tags, err := c.awsClient.EC2().RetrieveTags(conv.S(securityGroup.GroupId))
+		if err != nil {
+			return core.ExitWithErrorString("Failed to retrieve tags for EC2 Security Group [%s]: %s", sgName, err.Error())
+		}
+		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
+			deleteInstanceSecurityGroups = true
+			console.Println(" ", cc.BlackH("Instance Security Group"), cc.Green(sgName))
+		}
 	}
 
 	if !deleteECSServiceRole && !deleteECSCluster && !deleteLaunchConfiguration && !deleteAutoScalingGroup &&
@@ -175,7 +189,10 @@ func (c *Command) Run() error {
 	if deleteInstanceSecurityGroups {
 		console.Printf("Deleting Instance Security Group [%s]...\n", cc.Red(sgName))
 
-		if err := c.awsClient.EC2().DeleteSecurityGroup(conv.S(securityGroup.GroupId)); err != nil {
+		err = utils.RetryOnAWSErrorCode(func() error {
+			return c.awsClient.EC2().DeleteSecurityGroup(conv.S(securityGroup.GroupId))
+		}, []string{"DependencyViolation", "ResourceInUse"}, time.Second, 1*time.Minute)
+		if err != nil {
 			err = fmt.Errorf("Failed to delete Security Group [%s]: %s", sgName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error:"), err.Error())
@@ -190,6 +207,11 @@ func (c *Command) Run() error {
 		console.Printf("Deleting ECS Cluster [%s]...\n", cc.Red(ecsClusterName))
 
 		if err := c.awsClient.ECS().DeleteCluster(ecsClusterName); err != nil {
+			//if awsErr, ok := err.(awserr.Error); ok {
+			//	if awsErr.Code() == "ClusterContainsContainerInstancesException" {
+			//	}
+			//}
+			//
 			err = fmt.Errorf("Failed to delete ECS Cluster [%s]: %s", ecsServiceRoleName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error:"), err.Error())

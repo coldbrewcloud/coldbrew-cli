@@ -42,6 +42,33 @@ func (c *Command) Run() error {
 		return core.ExitWithError(err)
 	}
 
+	// keypair
+	keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
+	if utils.IsBlank(keyPairName) {
+		console.Println("Key pair name is required to create a new cluster.")
+
+		keyPairs, err := c.awsClient.EC2().ListKeyPairs()
+		if err != nil {
+			return core.ExitWithErrorString("Failed to list EC2 Key Pairs: %s", err.Error())
+		}
+
+		defaultKeyPairName := ""
+		if len(keyPairs) > 0 {
+			defaultKeyPairName = conv.S(keyPairs[0].KeyName)
+		}
+
+		keyPairName = console.AskQuestion("Enter key pair name:", defaultKeyPairName)
+	}
+
+	// check if key pair exists
+	keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
+	if err != nil {
+		return core.ExitWithErrorString("Failed to retrieve EC2 Key Pair [%s]: %s", keyPairName, err.Error())
+	}
+	if keyPairInfo == nil {
+		return core.ExitWithErrorString("EC2 Key Pair [%s] was not found.", keyPairName)
+	}
+
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
 
 	console.Println("Identifying resources to create...")
@@ -71,7 +98,7 @@ func (c *Command) Run() error {
 	}
 	if ecsServiceRole == nil {
 		createECSServiceRole = true
-		console.Println(" ", cc.BlackH("ECS Service Rike"), cc.Green(ecsServiceRoleName))
+		console.Println(" ", cc.BlackH("ECS Service Role"), cc.Green(ecsServiceRoleName))
 	}
 
 	// launch configuration
@@ -157,6 +184,9 @@ func (c *Command) Run() error {
 		if err := c.awsClient.EC2().AddInboundToSecurityGroup(instanceSecurityGroupID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
 			return core.ExitWithErrorString("Failed to add SSH inbound rule to Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
 		}
+		if err := c.awsClient.EC2().CreateTags(instanceSecurityGroupID, core.DefaultTagsForAWSResources()); err != nil {
+			return core.ExitWithErrorString("Failed to tag EC2 Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
+		}
 	}
 
 	// create launch configuration
@@ -164,7 +194,6 @@ func (c *Command) Run() error {
 		console.Printf("Creating Launch Configuration [%s]...\n", cc.Green(launchConfigName))
 
 		// key pair
-		keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
 		keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
 		if err != nil {
 			return core.ExitWithErrorString("Failed to retrieve key pair info [%s]: %s", keyPairName, err.Error())
@@ -222,6 +251,10 @@ func (c *Command) Run() error {
 		err = c.awsClient.AutoScaling().CreateAutoScalingGroup(autoScalingGroupName, launchConfigName, subnetIDs, 0, initialCapacity, initialCapacity)
 		if err != nil {
 			return core.ExitWithErrorString("Failed to create EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
+		}
+
+		if err := c.awsClient.AutoScaling().AddTagsToAutoScalingGroup(autoScalingGroupName, core.DefaultTagsForAWSResources(), true); err != nil {
+			return core.ExitWithErrorString("Failed to tag EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
 		}
 	}
 

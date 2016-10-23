@@ -49,10 +49,7 @@ func (c *Client) CreateSecurityGroup(name, description, vpcID string) (string, e
 
 func (c *Client) AddInboundToSecurityGroup(securityGroupID, protocol string, portRangeFrom, portRangeTo uint16, source string) error {
 	params := &_ec2.AuthorizeSecurityGroupIngressInput{
-		IpProtocol: _aws.String(protocol),
-		GroupId:    _aws.String(securityGroupID),
-		FromPort:   _aws.Int64(int64(portRangeFrom)),
-		ToPort:     _aws.Int64(int64(portRangeTo)),
+		GroupId: _aws.String(securityGroupID),
 	}
 
 	if strings.HasPrefix(source, "sg-") {
@@ -87,10 +84,7 @@ func (c *Client) AddInboundToSecurityGroup(securityGroupID, protocol string, por
 
 func (c *Client) RemoveInboundToSecurityGroup(securityGroupID, protocol string, portRangeFrom, portRangeTo uint16, source string) error {
 	params := &_ec2.RevokeSecurityGroupIngressInput{
-		IpProtocol: _aws.String(protocol),
-		GroupId:    _aws.String(securityGroupID),
-		FromPort:   _aws.Int64(int64(portRangeFrom)),
-		ToPort:     _aws.Int64(int64(portRangeTo)),
+		GroupId: _aws.String(securityGroupID),
 	}
 
 	if strings.HasPrefix(source, "sg-") {
@@ -192,28 +186,10 @@ func (c *Client) RetrieveSecurityGroupByName(name string) (*_ec2.SecurityGroup, 
 }
 
 func (c *Client) RetrieveSecurityGroupByNameOrID(nameOrID string) (*_ec2.SecurityGroup, error) {
-	params := &_ec2.DescribeSecurityGroupsInput{
-		Filters: []*_ec2.Filter{
-			{
-				Name:   _aws.String("group-name"),
-				Values: _aws.StringSlice([]string{nameOrID}),
-			},
-			{
-				Name:   _aws.String("group-id"),
-				Values: _aws.StringSlice([]string{nameOrID}),
-			},
-		},
-	}
-
-	res, err := c.svc.DescribeSecurityGroups(params)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(res.SecurityGroups) > 0 {
-		return res.SecurityGroups[0], nil
+	if strings.HasPrefix(nameOrID, "sg-") {
+		return c.RetrieveSecurityGroup(nameOrID)
 	} else {
-		return nil, nil
+		return c.RetrieveSecurityGroupByName(nameOrID)
 	}
 }
 
@@ -342,4 +318,61 @@ func (c *Client) RetrieveKeyPair(keyPairName string) (*_ec2.KeyPairInfo, error) 
 	}
 
 	return nil, nil
+}
+
+func (c *Client) ListKeyPairs() ([]*_ec2.KeyPairInfo, error) {
+	params := &_ec2.DescribeKeyPairsInput{}
+
+	res, err := c.svc.DescribeKeyPairs(params)
+	if err != nil {
+		return nil, err
+	}
+
+	keyPairs := []*_ec2.KeyPairInfo{}
+	for _, kp := range res.KeyPairs {
+		keyPairs = append(keyPairs, kp)
+	}
+
+	return keyPairs, nil
+}
+
+func (c *Client) CreateTags(resourceID string, tags map[string]string) error {
+	params := &_ec2.CreateTagsInput{
+		Resources: _aws.StringSlice([]string{resourceID}),
+		Tags:      []*_ec2.Tag{},
+	}
+
+	for tk, tv := range tags {
+		params.Tags = append(params.Tags, &_ec2.Tag{
+			Key:   _aws.String(tk),
+			Value: _aws.String(tv),
+		})
+	}
+
+	_, err := c.svc.CreateTags(params)
+
+	return err
+}
+
+func (c *Client) RetrieveTags(resourceID string) (map[string]string, error) {
+	params := &_ec2.DescribeTagsInput{
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("resource-id"),
+				Values: _aws.StringSlice([]string{resourceID}),
+			},
+		},
+	}
+
+	res, err := c.svc.DescribeTags(params)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := map[string]string{}
+	for _, t := range res.Tags {
+		tags[conv.S(t.Key)] = conv.S(t.Value)
+	}
+
+	return tags, nil
 }

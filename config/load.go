@@ -30,8 +30,12 @@ func Load(data []byte, configFormat string, defaultAppName string) (*Config, err
 		conf.Env = make(map[string]string)
 	}
 
-	// merge with defaults
-	conf.Defaults(DefaultConfig(defaultAppName))
+	// merge with defaults: defaultAppName is used only if loaded configuration does not have app name
+	appName := conv.S(conf.Name)
+	if appName == "" {
+		appName = defaultAppName
+	}
+	conf.Defaults(DefaultConfig(appName))
 
 	// validation
 	if err := conf.Validate(); err != nil {
@@ -75,7 +79,7 @@ func (c *Config) Defaults(source *Config) {
 	// AWS
 	defS(&c.AWS.ELBLoadBalancerName, source.AWS.ELBLoadBalancerName)
 	defS(&c.AWS.ELBTargetGroupName, source.AWS.ELBTargetGroupName)
-	defS(&c.AWS.ELBSecurityGroup, source.AWS.ELBSecurityGroup)
+	defS(&c.AWS.ELBSecurityGroupName, source.AWS.ELBSecurityGroupName)
 	defS(&c.AWS.ECRRepositoryName, source.AWS.ECRRepositoryName)
 
 	// docker

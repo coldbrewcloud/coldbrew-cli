@@ -30,9 +30,9 @@ load_balancer:
     unhealthy_limit: 2
 
 aws:
-  elb_lb_name: echo-lb
-  elb_target_name: echo-target
-  elb_security_group: echo-lb-sg
+  elb_name: echo-lb
+  elb_target_group_name: echo-target
+  elb_security_group_name: echo-lb-sg
   ecr_repo_name: echo-repo
 
 docker:
@@ -65,9 +65,9 @@ const refConfigJSON = `
 		}
 	},
 	"aws": {
-		"elb_lb_name": "echo-lb",
-		"elb_target_name": "echo-target",
-		"elb_security_group": "echo-lb-sg",
+		"elb_name": "echo-lb",
+		"elb_target_group_name": "echo-target",
+		"elb_security_group_name": "echo-lb-sg",
 		"ecr_repo_name": "echo-repo"
 	},
 	"docker": {
@@ -100,10 +100,10 @@ var refConfig = &Config{
 		},
 	},
 	AWS: ConfigAWS{
-		ELBLoadBalancerName: conv.SP("echo-lb"),
-		ELBTargetGroupName:  conv.SP("echo-target"),
-		ELBSecurityGroup:    conv.SP("echo-lb-sg"),
-		ECRRepositoryName:   conv.SP("echo-repo"),
+		ELBLoadBalancerName:  conv.SP("echo-lb"),
+		ELBTargetGroupName:   conv.SP("echo-target"),
+		ELBSecurityGroupName: conv.SP("echo-lb-sg"),
+		ECRRepositoryName:    conv.SP("echo-repo"),
 	},
 	Docker: ConfigDocker{
 		Bin: conv.SP("/usr/local/bin/docker"),

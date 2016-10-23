@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	_elb "github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
 type Client struct {
@@ -61,6 +63,35 @@ func (c *Client) RetrieveLoadBalancer(elbName string) (*_elb.LoadBalancer, error
 	}
 
 	return nil, fmt.Errorf("Invalid result: %v", res.LoadBalancers)
+}
+
+func (c *Client) RetrieveLoadBalancerListeners(loadBalancerARN string) ([]*_elb.Listener, error) {
+	listeners := []*_elb.Listener{}
+	var marker *string
+
+	for {
+		params := &_elb.DescribeListenersInput{
+			Marker:          marker,
+			LoadBalancerArn: _aws.String(loadBalancerARN),
+		}
+
+		res, err := c.svc.DescribeListeners(params)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range res.Listeners {
+			listeners = append(listeners, p)
+		}
+
+		if utils.IsBlank(conv.S(res.NextMarker)) {
+			break
+		}
+
+		marker = res.NextMarker
+	}
+
+	return listeners, nil
 }
 
 func (c *Client) DeleteLoadBalancer(loadBalancerARN string) error {
@@ -168,4 +199,43 @@ func (c *Client) CreateListener(loadBalancerARN, targetGroupARN string, port uin
 	}
 
 	return nil
+}
+
+func (c *Client) CreateTags(resourceARN string, tags map[string]string) error {
+	params := &_elb.AddTagsInput{
+		ResourceArns: _aws.StringSlice([]string{resourceARN}),
+		Tags:         []*_elb.Tag{},
+	}
+
+	for tk, tv := range tags {
+		params.Tags = append(params.Tags, &_elb.Tag{
+			Key:   _aws.String(tk),
+			Value: _aws.String(tv),
+		})
+	}
+
+	_, err := c.svc.AddTags(params)
+
+	return err
+}
+
+func (c *Client) RetrieveTags(resourceARN string) (map[string]string, error) {
+	params := &_elb.DescribeTagsInput{
+		ResourceArns: _aws.StringSlice([]string{resourceARN}),
+	}
+
+	res, err := c.svc.DescribeTags(params)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := map[string]string{}
+	if len(res.TagDescriptions) == 0 {
+		return tags, nil
+	}
+	for _, t := range res.TagDescriptions[0].Tags {
+		tags[conv.S(t.Key)] = conv.S(t.Value)
+	}
+
+	return tags, nil
 }

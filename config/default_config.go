@@ -53,7 +53,13 @@ func DefaultConfig(appName string) *Config {
 		conf.AWS.ELBTargetGroupName = conv.SP(elbLoadBalancerTargetGroupName)
 
 		// ELB security group
-		conf.AWS.ELBSecurityGroup = nil
+		elbSecurityGroupName := ""
+		if len(appName) > 25 {
+			elbSecurityGroupName = fmt.Sprintf("%s-elb-sg", appName[:25])
+		} else {
+			elbSecurityGroupName = fmt.Sprintf("%s-elb-sg", appName)
+		}
+		conf.AWS.ELBSecurityGroupName = conv.SP(elbSecurityGroupName)
 
 		// ECR Repository name
 		conf.AWS.ECRRepositoryName = conv.SP(fmt.Sprintf("coldbrew/%s", conv.S(conf.Name)))

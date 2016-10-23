@@ -3,9 +3,12 @@ package autoscaling
 import (
 	"strings"
 
+	"fmt"
+
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	_autoscaling "github.com/aws/aws-sdk-go/service/autoscaling"
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
 type Client struct {
@@ -118,4 +121,44 @@ func (c *Client) DeleteAutoScalingGroup(autoScalingGroupName string, forceDelete
 	_, err := c.svc.DeleteAutoScalingGroup(params)
 
 	return err
+}
+
+func (c *Client) AddTagsToAutoScalingGroup(autoScalingGroupName string, tags map[string]string, tagNewInstances bool) error {
+	params := &_autoscaling.CreateOrUpdateTagsInput{}
+
+	for tk, tv := range tags {
+		params.Tags = append(params.Tags, &_autoscaling.Tag{
+			ResourceId:        _aws.String(autoScalingGroupName),
+			ResourceType:      _aws.String("auto-scaling-group"),
+			Key:               _aws.String(tk),
+			Value:             _aws.String(tv),
+			PropagateAtLaunch: _aws.Bool(tagNewInstances),
+		})
+	}
+
+	_, err := c.svc.CreateOrUpdateTags(params)
+
+	return err
+}
+
+func (c *Client) RetrieveTagsForAutoScalingGroup(autoScalingGroupName string) (map[string]string, error) {
+	params := &_autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: _aws.StringSlice([]string{autoScalingGroupName}),
+	}
+
+	res, err := c.svc.DescribeAutoScalingGroups(params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.AutoScalingGroups) == 0 {
+		return nil, fmt.Errorf("EC2 Auto Scaling Group [%s] was not found.", autoScalingGroupName)
+	}
+
+	tags := map[string]string{}
+	for _, t := range res.AutoScalingGroups[0].Tags {
+		tags[conv.S(t.Key)] = conv.S(t.Value)
+	}
+
+	return tags, nil
 }

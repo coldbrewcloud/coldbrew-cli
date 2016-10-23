@@ -3,11 +3,15 @@ package delete
 import (
 	"io/ioutil"
 
+	"time"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
+	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/config"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 	"github.com/d5/cc"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -31,7 +35,7 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 func (c *Command) Run() error {
 	c.awsClient = c.globalFlags.GetAWSClient()
 
-	// configuration
+	// app configuration
 	configFilePath, err := c.globalFlags.GetConfigFile()
 	if err != nil {
 		return core.ExitWithError(err)
@@ -40,7 +44,7 @@ func (c *Command) Run() error {
 	if err != nil {
 		return core.ExitWithErrorString("Failed to read configuration file [%s]: %s", configFilePath, err.Error())
 	}
-	conf, err := config.Load(configData, conv.S(c.globalFlags.ConfigFileFormat))
+	conf, err := config.Load(configData, conv.S(c.globalFlags.ConfigFileFormat), core.DefaultAppName(configFilePath))
 	if err != nil {
 		return core.ExitWithError(err)
 	}
@@ -72,8 +76,14 @@ func (c *Command) Run() error {
 		return core.ExitWithErrorString("Failed to retrieve ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
 	}
 	if elbLoadBalancer != nil {
-		deleteELBLoadBalancer = true
-		console.Println(" ", cc.BlackH("ELB Load Balancer"), cc.Green(elbLoadBalancerName))
+		tags, err := c.awsClient.ELB().RetrieveTags(conv.S(elbLoadBalancer.LoadBalancerArn))
+		if err != nil {
+			return core.ExitWithErrorString("Failed to retrieve tags for ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
+		}
+		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
+			deleteELBLoadBalancer = true
+			console.Println(" ", cc.BlackH("ELB Load Balancer"), cc.Green(elbLoadBalancerName))
+		}
 	}
 
 	// ELB Target Group
@@ -83,19 +93,31 @@ func (c *Command) Run() error {
 		return core.ExitWithErrorString("Failed to retrieve ELB Target Group [%s]: %s", elbTargetGroupName, err.Error())
 	}
 	if elbTargetGroup != nil {
-		deleteELBTargetGroup = true
-		console.Println(" ", cc.BlackH("ELB Target Group"), cc.Green(elbTargetGroupName))
+		tags, err := c.awsClient.ELB().RetrieveTags(conv.S(elbTargetGroup.TargetGroupArn))
+		if err != nil {
+			return core.ExitWithErrorString("Failed to retrieve tags for ELB Target Group [%s]: %s", elbTargetGroupName, err.Error())
+		}
+		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
+			deleteELBTargetGroup = true
+			console.Println(" ", cc.BlackH("ELB Target Group"), cc.Green(elbTargetGroupName))
+		}
 	}
 
 	// ELB Load Balancer Security Group
-	elbLoadBalancerSecurityGroupName := conv.S(conf.AWS.ELBSecurityGroup)
+	elbLoadBalancerSecurityGroupName := conv.S(conf.AWS.ELBSecurityGroupName)
 	elbLoadBalancerSecurityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(elbLoadBalancerSecurityGroupName)
 	if err != nil {
 		return core.ExitWithErrorString("Failed to retrieve EC2 Security Group [%s]: %s", elbLoadBalancerSecurityGroupName, err.Error())
 	}
 	if elbLoadBalancerSecurityGroup != nil {
-		deleteELBLoadBalancerSecurityGroup = true
-		console.Println(" ", cc.BlackH("ELB Load Balancer Security Group"), cc.Green(elbLoadBalancerSecurityGroupName))
+		tags, err := c.awsClient.EC2().RetrieveTags(conv.S(elbLoadBalancerSecurityGroup.GroupId))
+		if err != nil {
+			return core.ExitWithErrorString("Failed to retrieve tags for EC2 Security Group [%s]: %s", elbLoadBalancerSecurityGroupName, err.Error())
+		}
+		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
+			deleteELBLoadBalancerSecurityGroup = true
+			console.Println(" ", cc.BlackH("ELB Load Balancer Security Group"), cc.Green(elbLoadBalancerSecurityGroupName))
+		}
 	}
 
 	// ECR Repository
@@ -122,9 +144,8 @@ func (c *Command) Run() error {
 
 	// Delete ECS Service
 	if deleteECSService {
-		console.Printf("Deleting ECS Service [%s]...\n", cc.Red(ecsServiceName))
-
 		// update ECS Service units = 0
+		console.Printf("Updating ECS Service [%s] to stop all tasks...\n", cc.Red(ecsServiceName))
 		_, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, conv.S(ecsService.TaskDefinition), 0)
 		if err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
@@ -133,8 +154,10 @@ func (c *Command) Run() error {
 				return core.ExitWithError(err)
 			}
 		} else {
+			console.Printf("Deleting ECS Service [%s]...\n", cc.Red(ecsServiceName))
+
 			// delete ECS Service
-			if err := c.awsClient.ECS().DeleteService(ecsServiceName, ecsServiceName); err != nil {
+			if err := c.awsClient.ECS().DeleteService(ecsClusterName, ecsServiceName); err != nil {
 				if conv.B(c.commandFlags.ContinueOnError) {
 					console.Errorln(cc.Red("Error:"), err.Error())
 				} else {
@@ -159,9 +182,13 @@ func (c *Command) Run() error {
 
 	// delete ELB Target Group {
 	if deleteELBTargetGroup {
-		console.Printf("Deleting ELB Target Group [%s]...\n", cc.Red(elbTargetGroupName))
+		console.Printf("Deleting ELB Target Group [%s]... %s\n", cc.Red(elbTargetGroupName), cc.BlackH("(this may take some time)"))
 
-		if err := c.awsClient.ELB().DeleteTargetGroup(conv.S(elbTargetGroup.TargetGroupArn)); err != nil {
+		err := utils.RetryOnAWSErrorCode(func() error {
+			return c.awsClient.ELB().DeleteTargetGroup(conv.S(elbTargetGroup.TargetGroupArn))
+		}, []string{"ResourceInUse"}, time.Second, 1*time.Minute)
+
+		if err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
@@ -172,13 +199,36 @@ func (c *Command) Run() error {
 
 	// delete ELB Load Balancer Security Group
 	if deleteELBLoadBalancerSecurityGroup {
-		console.Printf("Deleting ELB Load Balancer Security Group [%s]...\n", cc.Red(elbLoadBalancerSecurityGroupName))
+		ecsInstancesSecurityGroupName := core.DefaultInstanceSecurityGroupName(conv.S(conf.ClusterName))
+		ecsInstancesSecurityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByName(ecsInstancesSecurityGroupName)
+		if err != nil {
+			return core.ExitWithErrorString("Failed to retrieve EC2 Security Group [%s]: %s", ecsInstancesSecurityGroupName, err.Error())
+		}
 
-		if err := c.awsClient.EC2().DeleteSecurityGroup(conv.S(elbLoadBalancerSecurityGroup.GroupId)); err != nil {
+		console.Printf("Removing inbound rule [%s:%d:%s] from EC2 Security Group [%s]...\n",
+			ec2.SecurityGroupProtocolTCP, 0, conv.S(elbLoadBalancerSecurityGroup.GroupId),
+			cc.Red(ecsInstancesSecurityGroupName))
+		err = c.awsClient.EC2().RemoveInboundToSecurityGroup(
+			conv.S(ecsInstancesSecurityGroup.GroupId),
+			ec2.SecurityGroupProtocolTCP,
+			0, 0, conv.S(elbLoadBalancerSecurityGroup.GroupId))
+		if err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Errorln(cc.Red("Error:"), err.Error())
 			} else {
 				return core.ExitWithError(err)
+			}
+		} else {
+			console.Printf("Deleting ELB Load Balancer Security Group [%s]... %s\n", cc.Red(elbLoadBalancerSecurityGroupName), cc.BlackH("(this may take some time)"))
+			err = utils.RetryOnAWSErrorCode(func() error {
+				return c.awsClient.EC2().DeleteSecurityGroup(conv.S(elbLoadBalancerSecurityGroup.GroupId))
+			}, []string{"DependencyViolation", "ResourceInUse"}, time.Second, 1*time.Minute)
+			if err != nil {
+				if conv.B(c.commandFlags.ContinueOnError) {
+					console.Errorln(cc.Red("Error:"), err.Error())
+				} else {
+					return core.ExitWithError(err)
+				}
 			}
 		}
 	}

@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"fmt"
-
 	"io/ioutil"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
@@ -89,19 +88,23 @@ func (c *Command) Run() error {
 	// prepare docker image (build one if needed)
 	dockerImage := conv.S(c._commandFlags.DockerImage)
 	if utils.IsBlank(dockerImage) { // build local docker image
-		dockerImage = fmt.Sprintf("%s:localbuild", ecrRepoURI)
-		console.Printf("Start building Docker image [%s]...\n", dockerImage)
+		dockerImage = fmt.Sprintf("%s:latest", ecrRepoURI)
+		console.Printf("Start building Docker image [%s]...\n", cc.Green(dockerImage))
 		if err := c.buildDockerImage(dockerImage); err != nil {
 			return core.ExitWithError(err)
 		}
 	} else { // use local docker image
 		// if needed, re-tag local image so it can be pushed to target ECR repo
 		m := core.DockerImageURIRE.FindAllStringSubmatch(dockerImage, -1)
-		if len(m) != 0 {
+		if len(m) != 1 {
 			return core.ExitWithErrorString("Invalid Docker image [%s]", dockerImage)
 		}
 		if m[0][1] != ecrRepoURI {
-			newImage := fmt.Sprintf("%s:%s", ecrRepoURI, m[0][1])
+			tag := m[0][2]
+			if tag == "" {
+				tag = "latest"
+			}
+			newImage := fmt.Sprintf("%s:%s", ecrRepoURI, tag)
 
 			console.Printf("Tagging Docker image [%s] to [%s]...\n", dockerImage, newImage)
 			if err := c.dockerClient.TagImage(dockerImage, newImage); err != nil {
@@ -131,23 +134,42 @@ func (c *Command) Run() error {
 	return nil
 }
 
-func (c *Command) mergeFlagsIntoConfiguration(conf *config.Config, flags *Flags) *config.Config {
-	if conv.I64(flags.Units) >= 0 {
-		conf.Units = conv.U16P(uint16(conv.I64(flags.Units)))
+func (c *Command) isClusterAvailable(clusterName string) error {
+	// check ECS cluster
+	ecsClusterName := core.DefaultECSClusterName(clusterName)
+	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
+	}
+	if ecsCluster == nil || conv.S(ecsCluster.Status) == "INACTIVE" {
+		return fmt.Errorf("ECS Cluster [%s] not found", ecsClusterName)
 	}
 
-	if conv.F64(flags.CPU) >= 0 {
-		conf.CPU = conv.F64P(conv.F64(flags.CPU))
+	// check ECS service role
+	ecsServiceRoleName := core.DefaultECSServiceRoleName(clusterName)
+	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error())
+	}
+	if ecsServiceRole == nil {
+		return fmt.Errorf("IAM Role [%s] not found", ecsServiceRoleName)
 	}
 
-	if !utils.IsBlank(conv.S(flags.Memory)) {
-		conf.Memory = conv.SP(conv.S(flags.Memory))
+	return nil
+}
+
+func (c *Command) prepareECRRepo(repoName string) (string, error) {
+	ecrRepo, err := c.awsClient.ECR().RetrieveRepository(repoName)
+	if err != nil {
+		return "", fmt.Errorf("Failed to retrieve ECR repository [%s]: %s", repoName, err.Error())
 	}
 
-	// envs
-	for ek, ev := range *flags.Envs {
-		conf.Env[ek] = ev
+	if ecrRepo == nil {
+		ecrRepo, err = c.awsClient.ECR().CreateRepository(repoName)
+		if err != nil {
+			return "", fmt.Errorf("Failed to create ECR repository [%s]: %s", repoName, err.Error())
+		}
 	}
 
-	return conf
+	return *ecrRepo.RepositoryUri, nil
 }

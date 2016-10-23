@@ -81,8 +81,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("Invalid ELB Load Balancer name [%s]", conv.S(c.AWS.ELBLoadBalancerName))
 	}
 
-	if !core.ELBTargetNameRE.MatchString(conv.S(c.AWS.ELBTargetGroupName)) {
+	if !core.ELBTargetGroupNameRE.MatchString(conv.S(c.AWS.ELBTargetGroupName)) {
 		return fmt.Errorf("Invalid ELB Target Group name [%s]", conv.S(c.AWS.ELBTargetGroupName))
+	}
+
+	if !core.ELBSecurityGroupNameRE.MatchString(conv.S(c.AWS.ELBSecurityGroupName)) {
+		return fmt.Errorf("Invalid ELB Security Group name [%s]", conv.S(c.AWS.ELBSecurityGroupName))
 	}
 
 	if utils.IsBlank(conv.S(c.Docker.Bin)) {
