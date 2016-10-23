@@ -1,10 +1,10 @@
-package core
+package console
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/coldbrewcloud/coldbrew-cli/console"
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/d5/cc"
 )
 
@@ -13,10 +13,10 @@ func ExitWithErrorString(format string, a ...interface{}) error {
 }
 
 func ExitWithError(err error) error {
-	if ei, ok := err.(*Error); ok {
-		console.Errorln(cc.Red("Error:"), ei.Error(), cc.BlackH("(more info: "+ei.ExtraInfo()+")"))
+	if ei, ok := err.(*core.Error); ok {
+		Errorln(cc.Red("Error:"), ei.Error(), cc.BlackH("(more info: "+ei.ExtraInfo()+")"))
 	} else {
-		console.Errorln(cc.Red("Error:"), err.Error())
+		Errorln(cc.Red("Error:"), err.Error())
 	}
 	os.Exit(100)
 	return nil

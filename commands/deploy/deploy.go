@@ -41,20 +41,20 @@ func (c *Command) Run() error {
 	// app configuration
 	configFilePath, err := c.globalFlags.GetConfigFile()
 	if err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 	configData, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		return core.ExitWithErrorString("Failed to read configuration file [%s]: %s", configFilePath, err.Error())
+		return console.ExitWithErrorString("Failed to read configuration file [%s]: %s", configFilePath, err.Error())
 	}
 	c.conf, err = config.Load(configData, conv.S(c.globalFlags.ConfigFileFormat), core.DefaultAppName(configFilePath))
 	if err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 
 	// CLI flags validation
 	if err := c.validateFlags(c._commandFlags); err != nil {
-		return core.ExitWithError(core.NewErrorExtraInfo(err, "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Command:-deploy"))
+		return console.ExitWithError(core.NewErrorExtraInfo(err, "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Command:-deploy"))
 	}
 
 	// merge flags into main configuration
@@ -66,13 +66,13 @@ func (c *Command) Run() error {
 	// test if target cluster is available to use
 	console.Printf("Checking if cluster [%s] is available...\n", cc.Green(conv.S(c.conf.ClusterName)))
 	if err := c.isClusterAvailable(conv.S(c.conf.ClusterName)); err != nil {
-		return core.ExitWithError(core.NewErrorExtraInfo(err, "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Error:-Cluster-not-found"))
+		return console.ExitWithError(core.NewErrorExtraInfo(err, "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Error:-Cluster-not-found"))
 	}
 
 	// docker client
 	c.dockerClient = docker.NewClient(conv.S(c.conf.Docker.Bin))
 	if !c.dockerClient.DockerBinAvailable() {
-		return core.ExitWithError(core.NewErrorExtraInfo(
+		return console.ExitWithError(core.NewErrorExtraInfo(
 			fmt.Errorf("Failed to find Docker binary [%s].", c.conf.Docker.Bin),
 			"https://github.com/coldbrewcloud/coldbrew-cli/wiki/Error:-Docker-binary-not-found"))
 	}
@@ -81,7 +81,7 @@ func (c *Command) Run() error {
 	console.Println("Setting up ECR Repository...")
 	ecrRepoURI, err := c.prepareECRRepo(conv.S(c.conf.AWS.ECRRepositoryName))
 	if err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 	console.Println("ECR Repository", cc.Green(ecrRepoURI))
 
@@ -91,13 +91,13 @@ func (c *Command) Run() error {
 		dockerImage = fmt.Sprintf("%s:latest", ecrRepoURI)
 		console.Printf("Start building Docker image [%s]...\n", cc.Green(dockerImage))
 		if err := c.buildDockerImage(dockerImage); err != nil {
-			return core.ExitWithError(err)
+			return console.ExitWithError(err)
 		}
 	} else { // use local docker image
 		// if needed, re-tag local image so it can be pushed to target ECR repo
 		m := core.DockerImageURIRE.FindAllStringSubmatch(dockerImage, -1)
 		if len(m) != 1 {
-			return core.ExitWithErrorString("Invalid Docker image [%s]", dockerImage)
+			return console.ExitWithErrorString("Invalid Docker image [%s]", dockerImage)
 		}
 		if m[0][1] != ecrRepoURI {
 			tag := m[0][2]
@@ -108,7 +108,7 @@ func (c *Command) Run() error {
 
 			console.Printf("Tagging Docker image [%s] to [%s]...\n", dockerImage, newImage)
 			if err := c.dockerClient.TagImage(dockerImage, newImage); err != nil {
-				return core.ExitWithError(err)
+				return console.ExitWithError(err)
 			}
 
 			dockerImage = newImage
@@ -117,18 +117,18 @@ func (c *Command) Run() error {
 
 	// push docker image to ECR
 	if err := c.pushDockerImage(dockerImage); err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 
 	// create/update ECS task definition
 	ecsTaskDefinitionARN, err := c.updateECSTaskDefinition(dockerImage)
 	if err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 
 	// create/update ECS service
 	if err := c.createOrUpdateECSService(ecsTaskDefinitionARN); err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 
 	return nil

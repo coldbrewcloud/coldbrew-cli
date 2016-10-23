@@ -7,13 +7,29 @@ import (
 )
 
 func AskConfirm(message string, defaultYes bool) bool {
+	return AskConfirmWithNote(message, defaultYes, "")
+}
+
+func AskConfirmWithNote(message string, defaultYes bool, note string) bool {
 	reader := bufio.NewReader(os.Stdin)
+
+	if note != "" {
+		stdout("%\n", ColorFnAskConfirmNote(note))
+	}
 
 	for {
 		if defaultYes {
-			stdout("%s %s: ", message, "[YES/no]")
+			stdout("%s %s [%s/%s]: ",
+				MarkQuestion,
+				ColorFnAskConfirmMain(message),
+				ColorFnAskConfirmDefaultAnswer("Y"),
+				ColorFnAskConfirmAnswer("n"))
 		} else {
-			stdout("%s %s: ", message, "[yes/NO]")
+			stdout("%s %s [%s/%s]: ",
+				MarkQuestion,
+				ColorFnAskConfirmMain(message),
+				ColorFnAskConfirmAnswer("y"),
+				ColorFnAskConfirmDefaultAnswer("N"))
 		}
 
 		response, err := reader.ReadString('\n')
@@ -34,9 +50,20 @@ func AskConfirm(message string, defaultYes bool) bool {
 }
 
 func AskQuestion(message, defaultValue string) string {
+	return AskQuestionWithNote(message, defaultValue, "")
+}
+
+func AskQuestionWithNote(message, defaultValue, note string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	stdout("%s %s: ", message, "["+defaultValue+"]")
+	if note != "" {
+		stdout("%s\n", ColorFnAskQuestionNote(note))
+	}
+
+	stdout("%s %s [%s]: ",
+		MarkQuestion,
+		ColorFnAskQuestionMain(message),
+		ColorFnAskQuestionDefaultValue(defaultValue))
 
 	response, err := reader.ReadString('\n')
 	if err != nil {

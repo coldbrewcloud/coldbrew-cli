@@ -37,7 +37,7 @@ func (c *Command) Run() error {
 	// AWS networking
 	regionName, vpcID, subnetIDs, err := c.getAWSInfo()
 	if err != nil {
-		return core.ExitWithError(err)
+		return console.ExitWithError(err)
 	}
 
 	// cluster name
@@ -59,7 +59,7 @@ func (c *Command) Run() error {
 	launchConfigName := core.DefaultLaunchConfigurationName(clusterName)
 	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
 	if err != nil {
-		return core.ExitWithErrorString("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error())
+		return console.ExitWithErrorString("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error())
 	}
 	if launchConfig == nil {
 		console.Println(" ", cc.BlackH("Launch Config"), cc.Green(launchConfigName), cc.Red("(not found)"))
@@ -72,7 +72,7 @@ func (c *Command) Run() error {
 	autoScalingGroupName := core.DefaultAutoScalingGroupName(clusterName)
 	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
 	if err != nil {
-		return core.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
+		return console.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
 	}
 	if autoScalingGroup == nil {
 		console.Println(" ", cc.BlackH("Auto Scaling Group"), cc.Green(autoScalingGroupName), cc.Red("(not found)"))
@@ -95,7 +95,7 @@ func (c *Command) Run() error {
 	ecsClusterName := core.DefaultECSClusterName(clusterName)
 	ecsCluster, err := c.awsClient.ECS().RetrieveCluster(ecsClusterName)
 	if err != nil {
-		return core.ExitWithErrorString("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
+		return console.ExitWithErrorString("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
 	}
 	if ecsCluster == nil || conv.S(ecsCluster.Status) == "INACTIVE" {
 		console.Println(" ", cc.BlackH("Cluster"), cc.Green(ecsClusterName), cc.Red("(not found)"))
@@ -108,7 +108,7 @@ func (c *Command) Run() error {
 	ecsServiceRoleName := core.DefaultECSServiceRoleName(clusterName)
 	ecsServiceRole, err := c.awsClient.IAM().RetrieveRole(ecsServiceRoleName)
 	if err != nil {
-		return core.ExitWithErrorString("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error())
+		return console.ExitWithErrorString("Failed to retrieve IAM Role [%s]: %s", ecsServiceRoleName, err.Error())
 	}
 	if ecsServiceRole == nil {
 		console.Println(" ", cc.BlackH("Service Role"), cc.Green(ecsServiceRoleName), cc.Red("(not found)"))
@@ -143,7 +143,7 @@ func (c *Command) Run() error {
 		}
 		securityGroups, err := c.awsClient.EC2().RetrieveSecurityGroups(securityGroupIDs)
 		if err != nil {
-			return core.ExitWithErrorString("Failed to retrieve Security Groups [%s]: %s", strings.Join(securityGroupIDs, ","), err.Error())
+			return console.ExitWithErrorString("Failed to retrieve Security Groups [%s]: %s", strings.Join(securityGroupIDs, ","), err.Error())
 		}
 		securityGroupNames := []string{}
 		for _, sg := range securityGroups {
