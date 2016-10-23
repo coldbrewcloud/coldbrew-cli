@@ -53,7 +53,7 @@ func (c *Command) Run() error {
 	}
 	if ecsCluster != nil && conv.S(ecsCluster.Status) != "INACTIVE" {
 		deleteECSCluster = true
-		console.DetailWithAWSResourceName("ECS Cluster", ecsClusterName)
+		console.DetailWithResource("ECS Cluster", ecsClusterName)
 	}
 
 	// ECS service role
@@ -64,7 +64,7 @@ func (c *Command) Run() error {
 	}
 	if ecsServiceRole != nil {
 		deleteECSServiceRole = true
-		console.DetailWithAWSResourceName("IAM Role for ECS Services", ecsServiceRoleName)
+		console.DetailWithResource("IAM Role for ECS Services", ecsServiceRoleName)
 	}
 
 	// launch configuration
@@ -75,7 +75,7 @@ func (c *Command) Run() error {
 	}
 	if launchConfiguration != nil {
 		deleteLaunchConfiguration = true
-		console.DetailWithAWSResourceName("EC2 Launch Configuration for ECS Container Instances", lcName)
+		console.DetailWithResource("EC2 Launch Configuration for ECS Container Instances", lcName)
 	}
 
 	// auto scaling group
@@ -91,7 +91,7 @@ func (c *Command) Run() error {
 		}
 		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
 			deleteAutoScalingGroup = true
-			console.DetailWithAWSResourceName("EC2 Auto Scaling Group for ECS Container Instances", asgName)
+			console.DetailWithResource("EC2 Auto Scaling Group for ECS Container Instances", asgName)
 		}
 	}
 
@@ -103,7 +103,7 @@ func (c *Command) Run() error {
 	}
 	if instanceProfile != nil {
 		deleteInstanceProfile = true
-		console.DetailWithAWSResourceName("IAM Instance Profile for ECS Container Instances", instanceProfileName)
+		console.DetailWithResource("IAM Instance Profile for ECS Container Instances", instanceProfileName)
 	}
 
 	// instance security group
@@ -119,7 +119,7 @@ func (c *Command) Run() error {
 		}
 		if _, ok := tags[core.AWSTagNameCreatedTimestamp]; ok {
 			deleteInstanceSecurityGroups = true
-			console.DetailWithAWSResourceName("EC2 Security Group for ECS Container Instances", sgName)
+			console.DetailWithResource("EC2 Security Group for ECS Container Instances", sgName)
 		}
 	}
 
@@ -140,19 +140,19 @@ func (c *Command) Run() error {
 
 	// delete auto scaling group
 	if deleteAutoScalingGroup {
-		console.UpdatingAWSResourceName("Terminating instances in EC2 Auto Scaling Group", asgName, true)
+		console.UpdatingResource("Terminating instances in EC2 Auto Scaling Group", asgName, true)
 
 		if err := c.scaleDownAutoScalingGroup(autoScalingGroup); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+				console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 			} else {
 				return console.ExitWithError(err)
 			}
 		} else {
-			console.RemovingAWSResourceName("Deleting EC2 Auto Scaling Group", asgName, true)
+			console.RemovingResource("Deleting EC2 Auto Scaling Group", asgName, true)
 			if err := c.awsClient.AutoScaling().DeleteAutoScalingGroup(asgName, true); err != nil {
 				if conv.B(c.commandFlags.ContinueOnError) {
-					console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+					console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 				} else {
 					return console.ExitWithError(err)
 				}
@@ -162,12 +162,12 @@ func (c *Command) Run() error {
 
 	// delete launch configuration
 	if deleteLaunchConfiguration {
-		console.RemovingAWSResourceName("Deleting EC2 Launch Configuration", lcName, false)
+		console.RemovingResource("Deleting EC2 Launch Configuration", lcName, false)
 
 		if err := c.awsClient.AutoScaling().DeleteLaunchConfiguration(lcName); err != nil {
 			err = fmt.Errorf("Failed to delete Launch Configuration [%s]: %s", lcName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+				console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 			} else {
 				return console.ExitWithError(err)
 			}
@@ -176,11 +176,11 @@ func (c *Command) Run() error {
 
 	// delete instance profile
 	if deleteInstanceProfile {
-		console.RemovingAWSResourceName("Deleting IAM Instance Profile", instanceProfileName, false)
+		console.RemovingResource("Deleting IAM Instance Profile", instanceProfileName, false)
 
 		if err := c.deleteDefaultInstanceProfile(instanceProfileName); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+				console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 			} else {
 				return console.ExitWithError(err)
 			}
@@ -189,7 +189,7 @@ func (c *Command) Run() error {
 
 	// delete instance security groups
 	if deleteInstanceSecurityGroups {
-		console.RemovingAWSResourceName("Deleting EC2 Security Group", sgName, false)
+		console.RemovingResource("Deleting EC2 Security Group", sgName, false)
 
 		err = utils.RetryOnAWSErrorCode(func() error {
 			return c.awsClient.EC2().DeleteSecurityGroup(conv.S(securityGroup.GroupId))
@@ -197,7 +197,7 @@ func (c *Command) Run() error {
 		if err != nil {
 			err = fmt.Errorf("Failed to delete Security Group [%s]: %s", sgName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+				console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 			} else {
 				return console.ExitWithError(err)
 			}
@@ -206,7 +206,7 @@ func (c *Command) Run() error {
 
 	// delete ECS cluster
 	if deleteECSCluster {
-		console.RemovingAWSResourceName("Deleting ECS Cluster", ecsClusterName, false)
+		console.RemovingResource("Deleting ECS Cluster", ecsClusterName, false)
 
 		if err := c.awsClient.ECS().DeleteCluster(ecsClusterName); err != nil {
 			//if awsErr, ok := err.(awserr.Error); ok {
@@ -216,7 +216,7 @@ func (c *Command) Run() error {
 			//
 			err = fmt.Errorf("Failed to delete ECS Cluster [%s]: %s", ecsServiceRoleName, err.Error())
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+				console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 			} else {
 				return console.ExitWithError(err)
 			}
@@ -225,11 +225,11 @@ func (c *Command) Run() error {
 
 	// delete ECS service role
 	if deleteECSServiceRole {
-		console.RemovingAWSResourceName("Deleting IAM Role", ecsServiceRoleName, false)
+		console.RemovingResource("Deleting IAM Role", ecsServiceRoleName, false)
 
 		if err := c.deleteECSServiceRole(ecsServiceRoleName); err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
-				console.Errorln(console.ColorFnAWSResourceNameNegative("Error:"), err.Error())
+				console.Errorln(console.ColorFnResourceNegative("Error:"), err.Error())
 			} else {
 				return console.ExitWithError(err)
 			}

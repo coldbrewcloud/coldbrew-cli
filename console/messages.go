@@ -8,14 +8,36 @@ func Info(message string) {
 	Println(ColorFnInfoMessage(message))
 }
 
-func DetailWithAWSResourceName(message, resourceName string) {
-	Println("  " +
-		ColorFnDetailMessage(message+" [") +
-		ColorFnAWSResourceName(resourceName) +
-		ColorFnDetailMessage("]"))
+func DetailWithResource(message, resourceName string) {
+	//Println("  " +
+	//	ColorFnDetailMessage(message+" [") +
+	//	ColorFnResource(resourceName) +
+	//	ColorFnDetailMessage("]"))
+	Printf("  %s %s\n", ColorFnDetailMessage(message+":"), ColorFnResource(resourceName))
 }
 
-func AddingAWSResourceName(message, resourceName string, mayTakeLong bool) {
+func DetailWithResourceNote(message, resourceName, note string, negative bool) {
+	sideNote := ""
+	if note != "" {
+		if negative {
+			sideNote = ColorFnSideNoteNegative(note)
+		} else {
+			sideNote = ColorFnSideNote(note)
+		}
+	}
+
+	//Printf("  %s%s%s %s\n",
+	//	ColorFnDetailMessage(message+" ["),
+	//	ColorFnResource(resourceName),
+	//	ColorFnDetailMessage("]"),
+	//	sideNote)
+	Printf("  %s %s %s\n",
+		ColorFnDetailMessage(message+":"),
+		ColorFnResource(resourceName),
+		sideNote)
+}
+
+func AddingResource(message, resourceName string, mayTakeLong bool) {
 	sideNote := ""
 	if mayTakeLong {
 		sideNote = ColorFnSideNote("(this may take long)")
@@ -24,13 +46,13 @@ func AddingAWSResourceName(message, resourceName string, mayTakeLong bool) {
 	Printf("%s %s%s%s... %s\n",
 		MarkAdd,
 		ColorFnInfoMessage(message+" ["),
-		ColorFnAWSResourceName(resourceName),
+		ColorFnResource(resourceName),
 		ColorFnInfoMessage("]"),
 		sideNote)
 
 }
 
-func RemovingAWSResourceName(message, resourceName string, mayTakeLong bool) {
+func RemovingResource(message, resourceName string, mayTakeLong bool) {
 	sideNote := ""
 	if mayTakeLong {
 		sideNote = ColorFnSideNote("(this may take long)")
@@ -39,12 +61,12 @@ func RemovingAWSResourceName(message, resourceName string, mayTakeLong bool) {
 	Printf("%s %s%s%s... %s\n",
 		MarkRemove,
 		ColorFnInfoMessage(message+" ["),
-		ColorFnAWSResourceNameNegative(resourceName),
+		ColorFnResourceNegative(resourceName),
 		ColorFnInfoMessage("]"),
 		sideNote)
 }
 
-func UpdatingAWSResourceName(message, resourceName string, mayTakeLong bool) {
+func UpdatingResource(message, resourceName string, mayTakeLong bool) {
 	sideNote := ""
 	if mayTakeLong {
 		sideNote = ColorFnSideNote("(this may take long)")
@@ -53,7 +75,7 @@ func UpdatingAWSResourceName(message, resourceName string, mayTakeLong bool) {
 	Printf("%s %s%s%s... %s\n",
 		MarkUpdate,
 		ColorFnInfoMessage(message+" ["),
-		ColorFnAWSResourceName(resourceName),
+		ColorFnResource(resourceName),
 		ColorFnInfoMessage("]"),
 		sideNote)
 }

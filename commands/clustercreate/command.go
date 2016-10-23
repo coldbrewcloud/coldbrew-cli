@@ -87,7 +87,7 @@ func (c *Command) Run() error {
 	}
 	if ecsCluster == nil || conv.S(ecsCluster.Status) == "INACTIVE" {
 		createECSCluster = true
-		console.DetailWithAWSResourceName("ECS Cluster", ecsClusterName)
+		console.DetailWithResource("ECS Cluster", ecsClusterName)
 	}
 
 	// ECS service role
@@ -98,7 +98,7 @@ func (c *Command) Run() error {
 	}
 	if ecsServiceRole == nil {
 		createECSServiceRole = true
-		console.DetailWithAWSResourceName("IAM Role for ECS Services", ecsServiceRoleName)
+		console.DetailWithResource("IAM Role for ECS Services", ecsServiceRoleName)
 	}
 
 	// launch configuration
@@ -109,7 +109,7 @@ func (c *Command) Run() error {
 	}
 	if launchConfig == nil {
 		createLaunchConfiguration = true
-		console.DetailWithAWSResourceName("EC2 Launch Configuration for ECS Container Instances", launchConfigName)
+		console.DetailWithResource("EC2 Launch Configuration for ECS Container Instances", launchConfigName)
 	}
 
 	// auto scaling group
@@ -120,7 +120,7 @@ func (c *Command) Run() error {
 	}
 	if autoScalingGroup == nil || !utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		createAutoScalingGroup = true
-		console.DetailWithAWSResourceName("EC2 Auto Scaling Group for ECS Container Instances", autoScalingGroupName)
+		console.DetailWithResource("EC2 Auto Scaling Group for ECS Container Instances", autoScalingGroupName)
 	}
 
 	// instance profile
@@ -134,7 +134,7 @@ func (c *Command) Run() error {
 		}
 		if instanceProfile == nil {
 			createInstanceProfile = true
-			console.DetailWithAWSResourceName("IAM Instance Profile for ECS Container Instances", instanceProfileName)
+			console.DetailWithResource("IAM Instance Profile for ECS Container Instances", instanceProfileName)
 		}
 	}
 
@@ -147,7 +147,7 @@ func (c *Command) Run() error {
 	}
 	if instanceSecurityGroup == nil {
 		createInstanceSecurityGroup = true
-		console.DetailWithAWSResourceName("EC2 Security Group for ECS Container Instances", instanceSecurityGroupName)
+		console.DetailWithResource("EC2 Security Group for ECS Container Instances", instanceSecurityGroupName)
 	} else {
 		instanceSecurityGroupID = conv.S(instanceSecurityGroup.GroupId)
 	}
@@ -169,7 +169,7 @@ func (c *Command) Run() error {
 
 	// create instance profile
 	if createInstanceProfile {
-		console.AddingAWSResourceName("Creating IAM Instance Profile", instanceProfileName, false)
+		console.AddingResource("Creating IAM Instance Profile", instanceProfileName, false)
 
 		if _, err = c.createDefaultInstanceProfile(instanceProfileName); err != nil {
 			return console.ExitWithErrorString("Failed to create Instance Profile [%s]: %s", instanceProfileName, err.Error())
@@ -178,7 +178,7 @@ func (c *Command) Run() error {
 
 	// create instance security group
 	if createInstanceSecurityGroup {
-		console.AddingAWSResourceName("Creating EC2 Security Group", instanceSecurityGroupName, false)
+		console.AddingResource("Creating EC2 Security Group", instanceSecurityGroupName, false)
 
 		var err error
 		instanceSecurityGroupID, err = c.awsClient.EC2().CreateSecurityGroup(instanceSecurityGroupName, instanceSecurityGroupName, vpcID)
@@ -195,7 +195,7 @@ func (c *Command) Run() error {
 
 	// create launch configuration
 	if createLaunchConfiguration {
-		console.AddingAWSResourceName("Creating EC2 Launch Configuration", launchConfigName, true)
+		console.AddingResource("Creating EC2 Launch Configuration", launchConfigName, true)
 
 		// key pair
 		keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
@@ -238,7 +238,7 @@ func (c *Command) Run() error {
 
 	// create auto scaling group
 	if createAutoScalingGroup {
-		console.AddingAWSResourceName("Creating EC2 Auto Scaling Group", autoScalingGroupName, false)
+		console.AddingResource("Creating EC2 Auto Scaling Group", autoScalingGroupName, true)
 
 		// if existing auto scaling group is currently pending delete, wait a bit so it gets fully deleted
 		if autoScalingGroup != nil && !utils.IsBlank(conv.S(autoScalingGroup.Status)) {
@@ -261,7 +261,7 @@ func (c *Command) Run() error {
 
 	// create ECS cluster
 	if createECSCluster {
-		console.AddingAWSResourceName("Creating ECS Cluster", ecsClusterName, false)
+		console.AddingResource("Creating ECS Cluster", ecsClusterName, false)
 
 		if _, err := c.awsClient.ECS().CreateCluster(ecsClusterName); err != nil {
 			return console.ExitWithErrorString("Failed to create ECS Cluster [%s]: %s", ecsClusterName, err.Error())
@@ -270,7 +270,7 @@ func (c *Command) Run() error {
 
 	// create ECS service role
 	if createECSServiceRole {
-		console.AddingAWSResourceName("Creating IAM Role", ecsServiceRoleName, false)
+		console.AddingResource("Creating IAM Role", ecsServiceRoleName, false)
 
 		if _, err := c.createECSServiceRole(ecsServiceRoleName); err != nil {
 			return console.ExitWithErrorString("Failed to create IAM role [%s]: %s", ecsServiceRoleName, err.Error())

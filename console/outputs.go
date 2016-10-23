@@ -32,14 +32,13 @@ var (
 	ColorFnAskConfirmDefaultAnswer = regularFn
 	ColorFnAskConfirmAnswer        = regularFn
 
-	ColorFnInfoMessage   = regularFn
-	ColorFnDetailMessage = cc.BlackH
-	ColorFnSideNote      = cc.BlackH
+	ColorFnInfoMessage      = regularFn
+	ColorFnDetailMessage    = cc.BlackH
+	ColorFnSideNote         = cc.BlackH
+	ColorFnSideNoteNegative = cc.Red
 
-	ColorFnAWSResourceName            = cc.Green
-	ColorFnAWSResourceIDOrARN         = cc.Green
-	ColorFnAWSResourceNameNegative    = cc.Red
-	ColorFnAWSResourceIDOrARNNegative = cc.Red
+	ColorFnResource         = cc.Green
+	ColorFnResourceNegative = cc.Red
 
 	ColorFnErrorHeader  = cc.Red
 	ColorFnErrorMessage = regularFn
