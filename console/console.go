@@ -52,14 +52,6 @@ func EnableDebugf(enable bool, prefix string) {
 	}
 }
 
-func Println(tokens ...string) (int, error) {
-	return printfFn(strings.Join(tokens, " ") + "\n")
-}
-
-func Printf(format string, a ...interface{}) (int, error) {
-	return printfFn(format, a...)
-}
-
 func Debug(tokens ...string) (int, error) {
 	return debugfFn(debugLogPrefix + strings.Join(tokens, " "))
 }

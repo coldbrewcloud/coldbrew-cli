@@ -185,7 +185,7 @@ func (c *Command) Run() error {
 	}
 
 	console.Blank()
-	console.Info(fmt.Sprintf("Configuration file created: %s", console.ColorFnResource(configFile)))
+	console.Info(fmt.Sprintf("Configuration file: %s", configFile))
 
 	return nil
 }

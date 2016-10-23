@@ -5,24 +5,17 @@ import (
 
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/exec"
-	"github.com/d5/cc"
 )
 
 type Client struct {
-	dockerBin     string
-	outputIndent  string
-	execColorFn   func(string, ...interface{}) string
-	outputColorFn func(string, ...interface{}) string
-	errorColorFn  func(string, ...interface{}) string
+	dockerBin    string
+	outputIndent string
 }
 
 func NewClient(dockerBin string) *Client {
 	return &Client{
-		dockerBin:     dockerBin,
-		outputIndent:  "  ",
-		outputColorFn: cc.BlackH,
-		errorColorFn:  cc.Red,
-		execColorFn:   cc.YellowL,
+		dockerBin:    dockerBin,
+		outputIndent: "  ",
 	}
 }
 

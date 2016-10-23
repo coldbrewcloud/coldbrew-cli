@@ -1,11 +1,11 @@
 package console
 
 func Blank() {
-	Println()
+	printfFn("\n")
 }
 
 func Info(message string) {
-	Println(ColorFnInfoMessage(message))
+	printfFn("%s\n", ColorFnInfoMessage(message))
 }
 
 func DetailWithResource(message, resourceName string) {
@@ -13,7 +13,7 @@ func DetailWithResource(message, resourceName string) {
 	//	ColorFnDetailMessage(message+" [") +
 	//	ColorFnResource(resourceName) +
 	//	ColorFnDetailMessage("]"))
-	Printf("  %s %s\n", ColorFnDetailMessage(message+":"), ColorFnResource(resourceName))
+	printfFn("  %s %s\n", ColorFnDetailMessage(message+":"), ColorFnResource(resourceName))
 }
 
 func DetailWithResourceNote(message, resourceName, note string, negative bool) {
@@ -31,7 +31,7 @@ func DetailWithResourceNote(message, resourceName, note string, negative bool) {
 	//	ColorFnResource(resourceName),
 	//	ColorFnDetailMessage("]"),
 	//	sideNote)
-	Printf("  %s %s %s\n",
+	printfFn("  %s %s %s\n",
 		ColorFnDetailMessage(message+":"),
 		ColorFnResource(resourceName),
 		sideNote)
@@ -43,7 +43,7 @@ func AddingResource(message, resourceName string, mayTakeLong bool) {
 		sideNote = ColorFnSideNote("(this may take long)")
 	}
 
-	Printf("%s %s%s%s... %s\n",
+	printfFn("%s %s%s%s... %s\n",
 		MarkAdd,
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResource(resourceName),
@@ -58,7 +58,7 @@ func RemovingResource(message, resourceName string, mayTakeLong bool) {
 		sideNote = ColorFnSideNote("(this may take long)")
 	}
 
-	Printf("%s %s%s%s... %s\n",
+	printfFn("%s %s%s%s... %s\n",
 		MarkRemove,
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResourceNegative(resourceName),
@@ -72,7 +72,7 @@ func UpdatingResource(message, resourceName string, mayTakeLong bool) {
 		sideNote = ColorFnSideNote("(this may take long)")
 	}
 
-	Printf("%s %s%s%s... %s\n",
+	printfFn("%s %s%s%s... %s\n",
 		MarkUpdate,
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResource(resourceName),
@@ -86,7 +86,7 @@ func ProcessingOnResource(message, resourceName string, mayTakeLong bool) {
 		sideNote = ColorFnSideNote("(this may take long)")
 	}
 
-	Printf("%s %s%s%s... %s\n",
+	printfFn("%s %s%s%s... %s\n",
 		MarkProcessing,
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResource(resourceName),
@@ -95,15 +95,15 @@ func ProcessingOnResource(message, resourceName string, mayTakeLong bool) {
 }
 
 func ShellCommand(message string) {
-	Printf("%s %s\n",
+	printfFn("%s %s\n",
 		MarkShell,
 		ColorFnShellCommand(message))
 }
 
 func ShellOutput(message string) {
-	Println(ColorFnShellOutput(message))
+	printfFn("%s\n", ColorFnShellOutput(message))
 }
 
 func ShellError(message string) {
-	Println(ColorFnShellError(message))
+	printfFn("%s\n", ColorFnShellError(message))
 }
