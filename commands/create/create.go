@@ -141,6 +141,14 @@ func (c *Command) Run() error {
 		conf.Docker.Bin = conv.SP(c.askQuestion("Docker executable path", "Docker Bin", conv.S(defConf.Docker.Bin)))
 	}
 
+	console.Blank()
+
+	// validate
+	console.Info("Validating configuration...")
+	if err := conf.Validate(); err != nil {
+		return console.ExitWithError(core.NewErrorExtraInfo(err, "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File"))
+	}
+
 	// config file path and format
 	configFile, err := c.globalFlags.GetConfigFile()
 	if err != nil {

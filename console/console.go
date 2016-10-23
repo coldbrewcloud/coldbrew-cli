@@ -64,18 +64,6 @@ func Printf(format string, a ...interface{}) (int, error) {
 	return printfFn(format, a...)
 }
 
-func Error(tokens ...string) (int, error) {
-	return errorfFn(strings.Join(tokens, " "))
-}
-
-func Errorln(tokens ...string) (int, error) {
-	return errorfFn(strings.Join(tokens, " ") + "\n")
-}
-
-func Errorf(format string, a ...interface{}) (int, error) {
-	return errorfFn(format, a...)
-}
-
 func Debug(tokens ...string) (int, error) {
 	return debugfFn(debugLogPrefix + strings.Join(tokens, " "))
 }

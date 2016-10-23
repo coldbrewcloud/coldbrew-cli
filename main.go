@@ -38,7 +38,7 @@ func main() {
 	// parse CLI inputs
 	command, err := kingpinApp.Parse(os.Args[1:])
 	if err != nil {
-		console.Errorf(err.Error())
+		console.Error(err.Error())
 		os.Exit(5)
 	}
 
@@ -48,7 +48,7 @@ func main() {
 	// execute command
 	if c := registeredCommands[command]; c != nil {
 		if err := c.Run(); err != nil {
-			console.Errorf("Error: %s\n", err.Error())
+			console.Error(err.Error())
 			os.Exit(40)
 		}
 		os.Exit(0)

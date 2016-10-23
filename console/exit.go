@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/coldbrewcloud/coldbrew-cli/core"
-	"github.com/d5/cc"
 )
 
 func ExitWithErrorString(format string, a ...interface{}) error {
@@ -14,10 +13,21 @@ func ExitWithErrorString(format string, a ...interface{}) error {
 
 func ExitWithError(err error) error {
 	if ei, ok := err.(*core.Error); ok {
-		Errorln(cc.Red("Error:"), ei.Error(), cc.BlackH("(more info: "+ei.ExtraInfo()+")"))
+		errorfFn("%s %s %s\n",
+			ColorFnErrorHeader("Error:"),
+			ColorFnErrorMessage(ei.Error()),
+			ColorFnSideNote("(more info: "+ei.ExtraInfo()+")"))
 	} else {
-		Errorln(cc.Red("Error:"), err.Error())
+		errorfFn("%s %s\n",
+			ColorFnErrorHeader("Error:"),
+			ColorFnErrorMessage(err.Error()))
 	}
 	os.Exit(100)
 	return nil
+}
+
+func Error(message string) {
+	errorfFn("%s %s\n",
+		ColorFnErrorHeader("Error:"),
+		ColorFnErrorMessage(message))
 }
