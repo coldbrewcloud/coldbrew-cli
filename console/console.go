@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 )
 
 func stdout(format string, a ...interface{}) (int, error) {
@@ -67,4 +69,29 @@ func Debugf(format string, a ...interface{}) (int, error) {
 		return debugfFn(format, a...)
 	}
 
+}
+
+func ExitWithErrorString(format string, a ...interface{}) error {
+	return ExitWithError(fmt.Errorf(format, a))
+}
+
+func ExitWithError(err error) error {
+	if ei, ok := err.(*core.Error); ok {
+		errorfFn("%s %s %s\n",
+			ColorFnErrorHeader("Error:"),
+			ColorFnErrorMessage(ei.Error()),
+			ColorFnSideNote("(more info: "+ei.ExtraInfo()+")"))
+	} else {
+		errorfFn("%s %s\n",
+			ColorFnErrorHeader("Error:"),
+			ColorFnErrorMessage(err.Error()))
+	}
+	os.Exit(100)
+	return nil
+}
+
+func Error(message string) {
+	errorfFn("%s %s\n",
+		ColorFnErrorHeader("Error:"),
+		ColorFnErrorMessage(message))
 }
