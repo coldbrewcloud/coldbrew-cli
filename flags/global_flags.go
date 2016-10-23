@@ -20,6 +20,7 @@ type GlobalFlags struct {
 	AppDirectory     *string `json:"app-dir,omitempty"`
 	ConfigFile       *string `json:"config,omitempty"`
 	ConfigFileFormat *string `json:"config-format,omitempty"`
+	DisableColoring  *bool   `json:"disable-color,omitempty"`
 	Verbose          *bool   `json:"verbose,omitempty"`
 	AWSAccessKey     *string `json:"aws-access-key,omitempty"`
 	AWSSecretKey     *string `json:"aws-secret-key,omitempty"`
@@ -32,6 +33,7 @@ func NewGlobalFlags(ka *kingpin.Application) *GlobalFlags {
 		ConfigFile:       ka.Flag("config", "Configuration file path").Short('C').String(),
 		ConfigFileFormat: ka.Flag("config-format", "Configuraiton file format (JSON/YAML)").Default(GlobalFlagsConfigFileFormatYAML).String(),
 		AppDirectory:     ka.Flag("app-dir", "Application directory").Short('D').Default(".").String(),
+		DisableColoring:  ka.Flag("disable-color", "Disable color outputs").Bool(),
 		Verbose:          ka.Flag("verbose", "Enable verbose logging").Short('V').Default("false").Bool(),
 		AWSAccessKey:     ka.Flag("aws-access-key", "AWS access key (default: $AWS_ACCESS_KEY_ID)").Envar("AWS_ACCESS_KEY_ID").Default("").String(),
 		AWSSecretKey:     ka.Flag("aws-secret-key", "AWS secret key (default: $AWS_SECRET_ACCESS_KEY)").Envar("AWS_SECRET_ACCESS_KEY").Default("").String(),

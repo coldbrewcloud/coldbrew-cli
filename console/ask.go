@@ -20,13 +20,13 @@ func AskConfirmWithNote(message string, defaultYes bool, note string) bool {
 	for {
 		if defaultYes {
 			stdout("%s %s [%s/%s]: ",
-				MarkQuestion,
+				ColorFnMarkQuestion(MarkQuestion),
 				ColorFnAskConfirmMain(message),
 				ColorFnAskConfirmDefaultAnswer("Y"),
 				ColorFnAskConfirmAnswer("n"))
 		} else {
 			stdout("%s %s [%s/%s]: ",
-				MarkQuestion,
+				ColorFnMarkQuestion(MarkQuestion),
 				ColorFnAskConfirmMain(message),
 				ColorFnAskConfirmAnswer("y"),
 				ColorFnAskConfirmDefaultAnswer("N"))
@@ -61,7 +61,7 @@ func AskQuestionWithNote(message, defaultValue, note string) string {
 	}
 
 	stdout("%s %s [%s]: ",
-		MarkQuestion,
+		ColorFnMarkQuestion(MarkQuestion),
 		ColorFnAskQuestionMain(message),
 		ColorFnAskQuestionDefaultValue(defaultValue))
 

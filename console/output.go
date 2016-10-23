@@ -48,21 +48,21 @@ var (
 	ColorFnShellOutput  = cc.BlackH
 	ColorFnShellError   = cc.Red
 
-	ColorFnMarkAdd      = cc.Green
-	ColorFnMarkRemove   = cc.Red
-	ColorFnMarkUpdate   = cc.BlueH
-	ColorFnMarkProcess  = cc.BlueH
-	ColorFnMarkQuestion = cc.BlackH
-	ColorFnMarkShell    = regularFn
+	ColorFnMarkAdd        = cc.Green
+	ColorFnMarkRemove     = cc.Red
+	ColorFnMarkUpdate     = cc.BlueH
+	ColorFnMarkProcessing = cc.BlueH
+	ColorFnMarkQuestion   = cc.BlackH
+	ColorFnMarkShell      = regularFn
 )
 
 var (
-	MarkAdd        = ColorFnMarkAdd("[+]")
-	MarkRemove     = ColorFnMarkRemove("[-]")
-	MarkUpdate     = ColorFnMarkUpdate("[*]")
-	MarkProcessing = ColorFnMarkProcess("[*]")
-	MarkQuestion   = ColorFnMarkQuestion(">")
-	MarkShell      = ColorFnMarkShell(">")
+	MarkAdd        = "[+]"
+	MarkRemove     = "[-]"
+	MarkUpdate     = "[*]"
+	MarkProcessing = "[*]"
+	MarkQuestion   = ">"
+	MarkShell      = ">"
 )
 
 func Blank() {
@@ -109,7 +109,7 @@ func AddingResource(message, resourceName string, mayTakeLong bool) {
 	}
 
 	printfFn("%s %s%s%s... %s\n",
-		MarkAdd,
+		ColorFnMarkAdd(MarkAdd),
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResource(resourceName),
 		ColorFnInfoMessage("]"),
@@ -124,7 +124,7 @@ func RemovingResource(message, resourceName string, mayTakeLong bool) {
 	}
 
 	printfFn("%s %s%s%s... %s\n",
-		MarkRemove,
+		ColorFnMarkRemove(MarkRemove),
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResourceNegative(resourceName),
 		ColorFnInfoMessage("]"),
@@ -138,7 +138,7 @@ func UpdatingResource(message, resourceName string, mayTakeLong bool) {
 	}
 
 	printfFn("%s %s%s%s... %s\n",
-		MarkUpdate,
+		ColorFnMarkUpdate(MarkUpdate),
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResource(resourceName),
 		ColorFnInfoMessage("]"),
@@ -152,7 +152,7 @@ func ProcessingOnResource(message, resourceName string, mayTakeLong bool) {
 	}
 
 	printfFn("%s %s%s%s... %s\n",
-		MarkProcessing,
+		ColorFnMarkProcessing(MarkProcessing),
 		ColorFnInfoMessage(message+" ["),
 		ColorFnResource(resourceName),
 		ColorFnInfoMessage("]"),
@@ -161,7 +161,7 @@ func ProcessingOnResource(message, resourceName string, mayTakeLong bool) {
 
 func ShellCommand(message string) {
 	printfFn("%s %s\n",
-		MarkShell,
+		ColorFnMarkShell(MarkShell),
 		ColorFnShellCommand(message))
 }
 

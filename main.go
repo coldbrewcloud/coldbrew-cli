@@ -13,6 +13,8 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/commands/deploy"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
+	"github.com/d5/cc"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -22,9 +24,9 @@ const (
 )
 
 type CLIApp struct {
-	kingpinApp *kingpin.Application
-	appFlags   *flags.GlobalFlags
-	commands   map[string]commands.Command
+	kingpinApp  *kingpin.Application
+	globalFlags *flags.GlobalFlags
+	commands    map[string]commands.Command
 }
 
 func main() {
@@ -42,8 +44,11 @@ func main() {
 		os.Exit(5)
 	}
 
-	// setup debug logging
+	// setup logging
 	console.EnableDebugf(*globalFlags.Verbose, "")
+	if conv.B(globalFlags.DisableColoring) {
+		cc.Disable()
+	}
 
 	// execute command
 	if c := registeredCommands[command]; c != nil {
