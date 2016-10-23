@@ -157,7 +157,7 @@ func (c *Command) Run() error {
 				return console.ExitWithError(err)
 			}
 		} else {
-			console.RemovingResource("Deleting ECS Service", ecsServiceName, false)
+			console.RemovingResource("Deleting ECS Service", ecsServiceName, true)
 
 			// delete ECS Service
 			if err := c.awsClient.ECS().DeleteService(ecsClusterName, ecsServiceName); err != nil {
@@ -167,6 +167,18 @@ func (c *Command) Run() error {
 					return console.ExitWithError(err)
 				}
 			}
+
+			// wait until it becomes fully inactive (from draining status)
+			utils.Retry(func() (bool, error) {
+				service, err := c.awsClient.ECS().RetrieveService(ecsClusterName, ecsServiceName)
+				if err != nil {
+					return false, err
+				}
+				if service == nil || conv.S(service.Status) == "INACTIVE" {
+					return false, nil
+				}
+				return true, nil
+			}, time.Second, 5*time.Minute)
 		}
 	}
 
