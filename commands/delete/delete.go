@@ -225,7 +225,7 @@ func (c *Command) Run() error {
 			console.RemovingResource("Deleting EC2 Security Group for ELB Load Balancer", elbLoadBalancerSecurityGroupName, true)
 			err = utils.RetryOnAWSErrorCode(func() error {
 				return c.awsClient.EC2().DeleteSecurityGroup(conv.S(elbLoadBalancerSecurityGroup.GroupId))
-			}, []string{"DependencyViolation", "ResourceInUse"}, time.Second, 1*time.Minute)
+			}, []string{"DependencyViolation", "ResourceInUse"}, time.Second, 5*time.Minute)
 			if err != nil {
 				if conv.B(c.commandFlags.ContinueOnError) {
 					console.Error(err.Error())
