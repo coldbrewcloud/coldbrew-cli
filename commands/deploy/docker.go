@@ -7,7 +7,6 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
-	"github.com/d5/cc"
 )
 
 func (c *Command) buildDockerImage(image string) error {
@@ -38,7 +37,8 @@ func (c *Command) buildDockerImage(image string) error {
 }
 
 func (c *Command) pushDockerImage(image string) error {
-	console.Printf("Authenticating to push to ECR Repository...\n")
+	console.Info("Authenticating to push to ECR Repository...")
+
 	// docker login
 	userName, password, proxyURL, err := c.awsClient.ECR().GetDockerLogin()
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *Command) pushDockerImage(image string) error {
 	}
 
 	// docker push
-	console.Printf("Pushing Docker image [%s]...\n", cc.Green(image))
+	console.ProcessingOnResource("Pushing Docker image", image, true)
 	if err = c.dockerClient.PushImage(image); err != nil {
 		return fmt.Errorf("Failed to push Docker image [%s]: %s", image, err.Error())
 	}

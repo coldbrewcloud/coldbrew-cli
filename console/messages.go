@@ -79,3 +79,31 @@ func UpdatingResource(message, resourceName string, mayTakeLong bool) {
 		ColorFnInfoMessage("]"),
 		sideNote)
 }
+
+func ProcessingOnResource(message, resourceName string, mayTakeLong bool) {
+	sideNote := ""
+	if mayTakeLong {
+		sideNote = ColorFnSideNote("(this may take long)")
+	}
+
+	Printf("%s %s%s%s... %s\n",
+		MarkProcessing,
+		ColorFnInfoMessage(message+" ["),
+		ColorFnResource(resourceName),
+		ColorFnInfoMessage("]"),
+		sideNote)
+}
+
+func ShellCommand(message string) {
+	Printf("%s %s\n",
+		MarkShell,
+		ColorFnShellCommand(message))
+}
+
+func ShellOutput(message string) {
+	Println(ColorFnShellOutput(message))
+}
+
+func ShellError(message string) {
+	Println(ColorFnShellError(message))
+}

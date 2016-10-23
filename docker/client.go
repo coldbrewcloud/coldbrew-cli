@@ -43,7 +43,8 @@ func (c *Client) Login(userName, password, proxyURL string) error {
 	// NOTE: use slightly different implementation to hide password in output
 	//return c.exec(c.dockerBin, "login", "-u", userName, "-p", password, proxyURL)
 
-	console.Println(c.execColorFn(c.dockerBin + " login -u " + userName + " -p ****** " + proxyURL))
+	console.Blank()
+	console.ShellCommand(c.dockerBin + " login -u " + userName + " -p ****** " + proxyURL)
 
 	stdout, stderr, exit, err := exec.Exec(c.dockerBin, "login", "-u", userName, "-p", password, proxyURL)
 	if err != nil {
@@ -53,13 +54,15 @@ func (c *Client) Login(userName, password, proxyURL string) error {
 	for {
 		select {
 		case line := <-stdout:
-			console.Println(c.outputColorFn(line))
+			console.ShellOutput(line)
 		case line := <-stderr:
-			console.Println(c.errorColorFn(line))
+			console.ShellError(line)
 		case exitErr := <-exit:
+			console.Blank()
 			return exitErr
 		}
 	}
+
 	return nil
 }
 
@@ -72,7 +75,8 @@ func (c *Client) TagImage(src, dest string) error {
 }
 
 func (c *Client) exec(name string, args ...string) error {
-	console.Println(c.execColorFn(name) + " " + c.execColorFn(strings.Join(args, " ")))
+	console.Blank()
+	console.ShellCommand(name + " " + strings.Join(args, " "))
 
 	stdout, stderr, exit, err := exec.Exec(name, args...)
 	if err != nil {
@@ -82,12 +86,14 @@ func (c *Client) exec(name string, args ...string) error {
 	for {
 		select {
 		case line := <-stdout:
-			console.Println(c.outputColorFn(line))
+			console.ShellOutput(line)
 		case line := <-stderr:
-			console.Println(c.errorColorFn(line))
+			console.ShellError(line)
 		case exitErr := <-exit:
+			console.Blank()
 			return exitErr
 		}
 	}
+
 	return nil
 }

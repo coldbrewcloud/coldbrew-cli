@@ -9,7 +9,6 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
-	"github.com/d5/cc"
 )
 
 func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerName string, ecsTaskContainerPort uint16) (*ecs.LoadBalancer, error) {
@@ -66,14 +65,14 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 			}, nil
 		} else {
 			// ELB Target Group does not exist; Create a new one.
-			console.Printf("Creating ELB Target Group [%s]...\n", cc.Green(elbTargetGroupName))
+			console.AddingResource("Creating ELB Target Group", elbTargetGroupName, false)
 			elbTargetGroupARN, err := c.createELBTargetGroup(elbTargetGroupName)
 			if err != nil {
 				return nil, err
 			}
 
 			// create a new listen between ELB Load Balancer and ELB Target Group
-			console.Printf("Creating listener for ELB Load Balancer [%s] and ELB Target Group [%s]...\n", cc.Green(elbLoadBalancerName), cc.Green(elbTargetGroupName))
+			console.AddingResource("Adding a listenr for ELB Load Balancer", elbLoadBalancerName, false)
 			err = c.awsClient.ELB().CreateListener(
 				conv.S(elbLoadBalancer.LoadBalancerArn),
 				elbTargetGroupARN,
@@ -96,7 +95,7 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 		// Create a new listener between ELB Load Balanacer and ELB Target Group.
 
 		// create ELB target group
-		console.Printf("Creating ELB Target Group [%s]...\n", cc.Green(elbTargetGroupName))
+		console.AddingResource("Creating ELB Target Group", elbTargetGroupName, false)
 		elbTargetGroupARN, err := c.createELBTargetGroup(elbTargetGroupName)
 		if err != nil {
 			return nil, err
@@ -171,7 +170,7 @@ func (c *Command) createELBLoadBalancer(name, vpcID, securityGroupID string) (st
 		return "", fmt.Errorf("Failed to list subnets: %s", err.Error())
 	}
 
-	console.Printf("Creating ELB Load Balanacer [%s]...\n", cc.Green(name))
+	console.AddingResource("Creating ELB Load Balanacer", name, false)
 	lb, err := c.awsClient.ELB().CreateLoadBalancer(name, true, []string{securityGroupID}, subnetIDs)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create ELB Load Balancer [%s]: %s", name, err.Error())
@@ -200,7 +199,7 @@ func (c *Command) prepareLoadBalancerSecurityGroup(vpcID string) (string, error)
 }
 
 func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, securityGroupName string) (string, error) {
-	console.Printf("Creating EC2 Security Group [%s]...\n", cc.Green(securityGroupName))
+	console.AddingResource("Creating EC2 Security Group", securityGroupName, false)
 	securityGroupID, err := c.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, vpcID)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create EC2 Security Group [%s]: %s", securityGroupName, err.Error())
@@ -210,8 +209,9 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 	}
 
 	// add load balancer inbound rule
-	console.Printf("Adding inbound rule [%s:%d:%s] to EC2 Security Group [%s]...\n",
-		ec2.SecurityGroupProtocolTCP, elbPort, "0.0.0.0/0", cc.Green(securityGroupName))
+	console.UpdatingResource(fmt.Sprintf("Adding inbound rule [%s:%d:%s] to EC2 Security Group",
+		ec2.SecurityGroupProtocolTCP, elbPort, "0.0.0.0/0"),
+		securityGroupName, false)
 	err = c.awsClient.EC2().AddInboundToSecurityGroup(
 		securityGroupID,
 		ec2.SecurityGroupProtocolTCP,
@@ -230,8 +230,9 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 		return "", fmt.Errorf("EC2 Security Group [%s] for ECS Container Instances was not found.", ecsInstancesSecurityGroupName)
 	}
 
-	console.Printf("Adding inbound rule [%s:%d:%s] to EC2 Security Group [%s]...\n",
-		ec2.SecurityGroupProtocolTCP, 0, securityGroupID, cc.Green(ecsInstancesSecurityGroupName))
+	console.UpdatingResource(fmt.Sprintf("Adding inbound rule [%s:%d:%s] to EC2 Security Group",
+		ec2.SecurityGroupProtocolTCP, 0, securityGroupID),
+		ecsInstancesSecurityGroupName, false)
 	err = c.awsClient.EC2().AddInboundToSecurityGroup(
 		conv.S(ecsInstancesSecurityGroup.GroupId),
 		ec2.SecurityGroupProtocolTCP,

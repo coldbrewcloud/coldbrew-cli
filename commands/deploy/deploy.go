@@ -12,7 +12,6 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
-	"github.com/d5/cc"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -64,7 +63,7 @@ func (c *Command) Run() error {
 	c.awsClient = c.globalFlags.GetAWSClient()
 
 	// test if target cluster is available to use
-	console.Printf("Checking if cluster [%s] is available...\n", cc.Green(conv.S(c.conf.ClusterName)))
+	console.ProcessingOnResource("Checking cluster availability", conv.S(c.conf.ClusterName), false)
 	if err := c.isClusterAvailable(conv.S(c.conf.ClusterName)); err != nil {
 		return console.ExitWithError(core.NewErrorExtraInfo(err, "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Error:-Cluster-not-found"))
 	}
@@ -78,18 +77,16 @@ func (c *Command) Run() error {
 	}
 
 	// prepare ECR repo (create one if needed)
-	console.Println("Setting up ECR Repository...")
 	ecrRepoURI, err := c.prepareECRRepo(conv.S(c.conf.AWS.ECRRepositoryName))
 	if err != nil {
 		return console.ExitWithError(err)
 	}
-	console.Println("ECR Repository", cc.Green(ecrRepoURI))
 
 	// prepare docker image (build one if needed)
 	dockerImage := conv.S(c._commandFlags.DockerImage)
 	if utils.IsBlank(dockerImage) { // build local docker image
 		dockerImage = fmt.Sprintf("%s:latest", ecrRepoURI)
-		console.Printf("Start building Docker image [%s]...\n", cc.Green(dockerImage))
+		console.ProcessingOnResource("Building Docker image", dockerImage, true)
 		if err := c.buildDockerImage(dockerImage); err != nil {
 			return console.ExitWithError(err)
 		}
@@ -106,7 +103,7 @@ func (c *Command) Run() error {
 			}
 			newImage := fmt.Sprintf("%s:%s", ecrRepoURI, tag)
 
-			console.Printf("Tagging Docker image [%s] to [%s]...\n", dockerImage, newImage)
+			console.AddingResource("Tagging Docker image", fmt.Sprintf("%s -> %s", dockerImage, newImage), false)
 			if err := c.dockerClient.TagImage(dockerImage, newImage); err != nil {
 				return console.ExitWithError(err)
 			}
@@ -130,6 +127,9 @@ func (c *Command) Run() error {
 	if err := c.createOrUpdateECSService(ecsTaskDefinitionARN); err != nil {
 		return console.ExitWithError(err)
 	}
+
+	console.Blank()
+	console.Info("Application deployment completed.")
 
 	return nil
 }
@@ -165,6 +165,7 @@ func (c *Command) prepareECRRepo(repoName string) (string, error) {
 	}
 
 	if ecrRepo == nil {
+		console.AddingResource("Creating ECR Repository", repoName, false)
 		ecrRepo, err = c.awsClient.ECR().CreateRepository(repoName)
 		if err != nil {
 			return "", fmt.Errorf("Failed to create ECR repository [%s]: %s", repoName, err.Error())

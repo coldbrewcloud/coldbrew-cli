@@ -43,21 +43,24 @@ var (
 	ColorFnErrorHeader  = cc.Red
 	ColorFnErrorMessage = regularFn
 
-	ColorFnShellCommand = concat(cc.Bold, cc.YellowH)
+	//ColorFnShellCommand = concat(cc.Bold, cc.YellowH)
+	ColorFnShellCommand = cc.Cyan
 	ColorFnShellOutput  = cc.BlackH
 	ColorFnShellError   = cc.Red
 
 	ColorFnMarkAdd      = cc.Green
 	ColorFnMarkRemove   = cc.Red
 	ColorFnMarkUpdate   = cc.BlueH
+	ColorFnMarkProcess  = cc.BlueH
 	ColorFnMarkQuestion = cc.BlackH
 	ColorFnMarkShell    = regularFn
 )
 
 var (
-	MarkAdd      = ColorFnMarkAdd("[+]")
-	MarkRemove   = ColorFnMarkRemove("[-]")
-	MarkUpdate   = ColorFnMarkUpdate("[*]")
-	MarkQuestion = ColorFnMarkQuestion(">")
-	MarkShell    = ColorFnMarkShell("[>]")
+	MarkAdd        = ColorFnMarkAdd("[+]")
+	MarkRemove     = ColorFnMarkRemove("[-]")
+	MarkUpdate     = ColorFnMarkUpdate("[*]")
+	MarkProcessing = ColorFnMarkProcess("[*]")
+	MarkQuestion   = ColorFnMarkQuestion(">")
+	MarkShell      = ColorFnMarkShell(">")
 )

@@ -9,7 +9,6 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
-	"github.com/d5/cc"
 )
 
 func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, error) {
@@ -34,7 +33,7 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 	memory /= 1000 * 1000
 	useCloudWatchLogs := false
 
-	console.Printf("Updating ECS Task Definition [%s]...\n", cc.Green(ecsTaskDefinitionName))
+	console.UpdatingResource("Updating ECS Task Definition", ecsTaskDefinitionName, false)
 	ecsTaskDef, err := c.awsClient.ECS().UpdateTaskDefinition(
 		ecsTaskDefinitionName,
 		dockerImageFullURI,
@@ -97,7 +96,7 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 		loadBalancers = []*ecs.LoadBalancer{loadBalancer}
 	}
 
-	console.Printf("Creating ECS Service [%s]...\n", cc.Green(ecsServiceName))
+	console.AddingResource("Creating ECS Service", ecsServiceName, false)
 	_, err := c.awsClient.ECS().CreateService(
 		ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units),
 		loadBalancers, ecsServiceRoleName)
@@ -109,7 +108,7 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 }
 
 func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN string) error {
-	console.Printf("Updating ECS Service [%s]...\n", cc.Green(ecsServiceName))
+	console.UpdatingResource("Updating ECS Service", ecsServiceName, false)
 	_, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units))
 	if err != nil {
 		return fmt.Errorf("Failed to update ECS Service [%s]: %s", ecsServiceName, err.Error())
