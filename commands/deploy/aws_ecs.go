@@ -60,9 +60,14 @@ func (c *Command) createOrUpdateECSService(ecsTaskDefinitionARN string) error {
 	}
 
 	if ecsService != nil && conv.S(ecsService.Status) == "ACTIVE" {
-		// TODO: handle the case where configuration requires changes in ECS Service
-		// E.g. ask user to re-create the Service
-		if err := c.updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN); err != nil {
+		elbLoadBalancerName := ""
+		elbTargetGroupARN := ""
+		if ecsService.LoadBalancers != nil && len(ecsService.LoadBalancers) > 0 {
+			elbLoadBalancerName = conv.S(ecsService.LoadBalancers[0].LoadBalancerName)
+			elbTargetGroupARN = conv.S(ecsService.LoadBalancers[0].TargetGroupArn)
+		}
+
+		if err := c.updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, elbLoadBalancerName, elbTargetGroupARN); err != nil {
 			return err
 		}
 	} else {
@@ -107,7 +112,14 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 	return nil
 }
 
-func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN string) error {
+func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, elbLoadBalancerName, elbTargetGroupARN string) error {
+
+	// check if ELB Target Group health check needs to be updated
+	if err := c.checkLoadBalancerHealthCheckChanges(elbTargetGroupARN); err != nil {
+		return err
+	}
+
+	// update ECS service
 	console.UpdatingResource("Updating ECS Service", ecsServiceName, false)
 	_, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units))
 	if err != nil {

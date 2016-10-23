@@ -243,3 +243,56 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 
 	return securityGroupID, nil
 }
+
+func (c *Command) checkLoadBalancerHealthCheckChanges(elbTargetGroupARN string) error {
+	// retrieve ELB Target Group
+	elbTargetGroup, err := c.awsClient.ELB().RetrieveTargetGroup(elbTargetGroupARN)
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve ELB Target Group [%s]: %s", elbTargetGroupARN, err.Error())
+	}
+	if elbTargetGroup == nil {
+		return fmt.Errorf("ELB Target Group [%s] was not found.", elbTargetGroupARN)
+	}
+
+	// compare health check configurations
+	checkInterval, err := core.ParseTimeExpression(conv.S(c.conf.LoadBalancer.HealthCheck.Interval))
+	if err != nil {
+		return nil
+	}
+
+	timeout, err := core.ParseTimeExpression(conv.S(c.conf.LoadBalancer.HealthCheck.Timeout))
+	if err != nil {
+		return nil
+	}
+
+	currentStatusMatcher := ""
+	if elbTargetGroup.Matcher != nil {
+		currentStatusMatcher = conv.S(elbTargetGroup.Matcher.HttpCode)
+	}
+
+	if conv.I64(elbTargetGroup.HealthCheckIntervalSeconds) != int64(checkInterval) ||
+		conv.I64(elbTargetGroup.HealthCheckTimeoutSeconds) != int64(timeout) ||
+		conv.S(elbTargetGroup.HealthCheckPath) != conv.S(c.conf.LoadBalancer.HealthCheck.Path) ||
+		conv.I64(elbTargetGroup.HealthyThresholdCount) != int64(conv.U16(c.conf.LoadBalancer.HealthCheck.HealthyLimit)) ||
+		conv.I64(elbTargetGroup.UnhealthyThresholdCount) != int64(conv.U16(c.conf.LoadBalancer.HealthCheck.UnhealthyLimit)) ||
+		currentStatusMatcher != conv.S(c.conf.LoadBalancer.HealthCheck.Status) {
+		// need to update Target Group health check settings
+
+		healthCheckParams := &elb.HealthCheckParams{
+			CheckIntervalSeconds:    uint16(checkInterval),
+			CheckPath:               conv.S(c.conf.LoadBalancer.HealthCheck.Path),
+			Protocol:                "HTTP",
+			ExpectedHTTPStatusCodes: conv.S(c.conf.LoadBalancer.HealthCheck.Status),
+			CheckTimeoutSeconds:     uint16(timeout),
+			HealthyThresholdCount:   conv.U16(c.conf.LoadBalancer.HealthCheck.HealthyLimit),
+			UnhealthyThresholdCount: conv.U16(c.conf.LoadBalancer.HealthCheck.UnhealthyLimit),
+		}
+
+		console.UpdatingResource("Updating ELB Target Group health check parameters", conv.S(elbTargetGroup.TargetGroupName), false)
+		if err := c.awsClient.ELB().UpdateTargetGroupHealthCheck(elbTargetGroupARN, healthCheckParams); err != nil {
+			return fmt.Errorf("Failed to update ELB Target Group [%s]: %s", elbTargetGroupARN, err.Error())
+		}
+	}
+
+	return nil
+}

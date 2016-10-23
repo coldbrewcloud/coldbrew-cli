@@ -149,6 +149,23 @@ func (c *Client) RetrieveTargetGroup(targetGroupARN string) (*_elb.TargetGroup, 
 	return nil, nil
 }
 
+func (c *Client) UpdateTargetGroupHealthCheck(targetGroupARN string, healthCheck *HealthCheckParams) error {
+	params := &_elb.ModifyTargetGroupInput{
+		TargetGroupArn:             _aws.String(targetGroupARN),
+		HealthCheckIntervalSeconds: _aws.Int64(int64(healthCheck.CheckIntervalSeconds)),
+		HealthCheckPath:            _aws.String(healthCheck.CheckPath),
+		HealthCheckProtocol:        _aws.String(healthCheck.Protocol),
+		HealthCheckTimeoutSeconds:  _aws.Int64(int64(healthCheck.CheckTimeoutSeconds)),
+		HealthyThresholdCount:      _aws.Int64(int64(healthCheck.HealthyThresholdCount)),
+		UnhealthyThresholdCount:    _aws.Int64(int64(healthCheck.UnhealthyThresholdCount)),
+		Matcher:                    &_elb.Matcher{HttpCode: _aws.String(healthCheck.ExpectedHTTPStatusCodes)},
+	}
+
+	_, err := c.svc.ModifyTargetGroup(params)
+
+	return err
+}
+
 func (c *Client) RetrieveTargetGroupByName(targetGroupName string) (*_elb.TargetGroup, error) {
 	params := &_elb.DescribeTargetGroupsInput{
 		Names: _aws.StringSlice([]string{targetGroupName}),
