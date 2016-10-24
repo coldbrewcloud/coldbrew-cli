@@ -226,7 +226,7 @@ func (c *Command) Run() error {
 		err = c.awsClient.EC2().RemoveInboundToSecurityGroup(
 			conv.S(ecsInstancesSecurityGroup.GroupId),
 			ec2.SecurityGroupProtocolTCP,
-			0, 0, conv.S(elbLoadBalancerSecurityGroup.GroupId))
+			0, 65535, conv.S(elbLoadBalancerSecurityGroup.GroupId))
 		if err != nil {
 			if conv.B(c.commandFlags.ContinueOnError) {
 				console.Error(err.Error())

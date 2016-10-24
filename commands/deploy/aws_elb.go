@@ -236,7 +236,7 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 	err = c.awsClient.EC2().AddInboundToSecurityGroup(
 		conv.S(ecsInstancesSecurityGroup.GroupId),
 		ec2.SecurityGroupProtocolTCP,
-		0, 0, securityGroupID)
+		0, 65535, securityGroupID)
 	if err != nil {
 		return "", fmt.Errorf("Failed to add inbound rule to EC2 Security Group [%s]: %s", ecsInstancesSecurityGroupName, err.Error())
 	}
