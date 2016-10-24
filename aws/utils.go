@@ -19,3 +19,12 @@ func GetECSTaskDefinitionFamilyAndRevisionFromARN(arn string) string {
 	}
 	return tokens[len(tokens)-1]
 }
+
+func GetECSContainerInstanceIDFromARN(arn string) string {
+	// format: "arn:aws:ecs:us-west-2:865092420289:container-instance/72b93c91-0572-4d9d-b3d6-6e5cc5a0d2be"
+	tokens := strings.Split(arn, "/")
+	if len(tokens) == 0 {
+		return ""
+	}
+	return tokens[len(tokens)-1]
+}

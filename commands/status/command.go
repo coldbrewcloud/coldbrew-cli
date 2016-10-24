@@ -158,7 +158,7 @@ func (c *Command) Run() error {
 		// Container Definition
 		if ecsServiceActive && ecsTaskDefinition != nil {
 			for _, containerDefinition := range ecsTaskDefinition.ContainerDefinitions {
-				console.Info("Container")
+				console.Info("Container Definition")
 
 				console.DetailWithResource("Name", conv.S(containerDefinition.Name))
 				console.DetailWithResource("Image", conv.S(containerDefinition.Image))
@@ -224,15 +224,15 @@ func (c *Command) Run() error {
 
 				for _, ci := range containerInstances {
 					if conv.S(task.ContainerInstanceArn) == conv.S(ci.ContainerInstanceArn) {
-						console.DetailWithResource("EC2 Instance", conv.S(ci.Ec2InstanceId))
+						console.DetailWithResource("EC2 Instance ID", conv.S(ci.Ec2InstanceId))
 
 						for _, ec2Instance := range ec2Instances {
 							if conv.S(ci.Ec2InstanceId) == conv.S(ec2Instance.InstanceId) {
 								if !utils.IsBlank(conv.S(ec2Instance.PrivateIpAddress)) {
-									console.DetailWithResource("Private IP", conv.S(ec2Instance.PrivateIpAddress))
+									console.DetailWithResource("  Private IP", conv.S(ec2Instance.PrivateIpAddress))
 								}
 								if !utils.IsBlank(conv.S(ec2Instance.PublicIpAddress)) {
-									console.DetailWithResource("Public IP", conv.S(ec2Instance.PublicIpAddress))
+									console.DetailWithResource("  Public IP", conv.S(ec2Instance.PublicIpAddress))
 								}
 								break
 							}

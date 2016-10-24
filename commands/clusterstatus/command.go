@@ -107,11 +107,11 @@ func (c *Command) Run() error {
 		console.DetailWithResource("EC2 Launch Configuration", launchConfigName)
 
 		instanceProfileARN := conv.S(launchConfig.IamInstanceProfile)
-		console.DetailWithResource("IAM Instance Profile", aws.GetIAMInstanceProfileNameFromARN(instanceProfileARN))
+		console.DetailWithResource("  IAM Instance Profile", aws.GetIAMInstanceProfileNameFromARN(instanceProfileARN))
 
-		console.DetailWithResource("Instance Type", conv.S(launchConfig.InstanceType))
-		console.DetailWithResource("Image ID", conv.S(launchConfig.ImageId))
-		console.DetailWithResource("Key Pair", conv.S(launchConfig.KeyName))
+		console.DetailWithResource("  Instance Type", conv.S(launchConfig.InstanceType))
+		console.DetailWithResource("  Image ID", conv.S(launchConfig.ImageId))
+		console.DetailWithResource("  Key Pair", conv.S(launchConfig.KeyName))
 
 		securityGroupIDs := []string{}
 		for _, sg := range launchConfig.SecurityGroups {
@@ -125,7 +125,7 @@ func (c *Command) Run() error {
 		for _, sg := range securityGroups {
 			securityGroupNames = append(securityGroupNames, conv.S(sg.GroupName))
 		}
-		console.DetailWithResource("Security Groups", strings.Join(securityGroupNames, " "))
+		console.DetailWithResource("  Security Groups", strings.Join(securityGroupNames, " "))
 	}
 
 	// auto scaling group
@@ -138,7 +138,7 @@ func (c *Command) Run() error {
 		console.DetailWithResourceNote("EC2 Auto Scaling Group", autoScalingGroupName, "(not found)", true)
 	} else if utils.IsBlank(conv.S(autoScalingGroup.Status)) {
 		console.DetailWithResource("EC2 Auto Scaling Group", autoScalingGroupName)
-		console.DetailWithResource("EC2 Instances (current/desired/min/max)",
+		console.DetailWithResource("  Instances (current/desired/min/max)",
 			fmt.Sprintf("%d/%d/%d/%d",
 				len(autoScalingGroup.Instances),
 				conv.I64(autoScalingGroup.DesiredCapacity),
@@ -171,6 +171,8 @@ func (c *Command) Run() error {
 
 		for _, ci := range containerInstances {
 			console.Info("ECS Container Instance")
+
+			console.DetailWithResource("ID", aws.GetECSContainerInstanceIDFromARN(conv.S(ci.ContainerInstanceArn)))
 
 			if conv.B(ci.AgentConnected) {
 				console.DetailWithResource("Status", conv.S(ci.Status))
@@ -205,14 +207,14 @@ func (c *Command) Run() error {
 			console.DetailWithResource("Memory (remaining/registered)", fmt.Sprintf("%dM/%dM,",
 				remainingMemory, registeredMemory))
 
-			console.DetailWithResource("EC2 Instance", conv.S(ci.Ec2InstanceId))
+			console.DetailWithResource("EC2 Instance ID", conv.S(ci.Ec2InstanceId))
 			for _, ei := range ec2Instances {
 				if conv.S(ei.InstanceId) == conv.S(ci.Ec2InstanceId) {
 					if !utils.IsBlank(conv.S(ei.PrivateIpAddress)) {
-						console.DetailWithResource("Private IP", conv.S(ei.PrivateIpAddress))
+						console.DetailWithResource("  Private IP", conv.S(ei.PrivateIpAddress))
 					}
 					if !utils.IsBlank(conv.S(ei.PublicIpAddress)) {
-						console.DetailWithResource("Public IP", conv.S(ei.PublicIpAddress))
+						console.DetailWithResource("  Public IP", conv.S(ei.PublicIpAddress))
 					}
 					break
 				}
