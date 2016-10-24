@@ -21,5 +21,5 @@ func echo(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", echo)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe("0.0.0.0:8888", nil)
 }
