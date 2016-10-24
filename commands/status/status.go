@@ -1,11 +1,9 @@
 package status
 
 import (
-	"io/ioutil"
-
-	"strings"
-
 	"fmt"
+	"io/ioutil"
+	"strings"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/config"
@@ -80,8 +78,8 @@ func (c *Command) Run() error {
 			return console.ExitWithErrorString("Failed to retrieve ECS Cluster [%s]: %s", ecsClusterName, err.Error())
 		}
 		if ecsCluster == nil || conv.S(ecsCluster.Status) != "ACTIVE" {
-			ecsCluster = nil
 			console.DetailWithResourceNote("ECS Cluster", ecsClusterName, "(not found)", true)
+			ecsCluster = nil
 		} else {
 			console.DetailWithResource("ECS Cluster", ecsClusterName)
 		}
@@ -100,6 +98,7 @@ func (c *Command) Run() error {
 		}
 
 		// ECS Service
+		ecsServiceActive := false
 		if ecsCluster != nil {
 			ecsServiceName := core.DefaultECSServiceName(appName)
 			ecsService, err := c.awsClient.ECS().RetrieveService(ecsClusterName, ecsServiceName)
@@ -109,10 +108,11 @@ func (c *Command) Run() error {
 			if ecsService == nil {
 				console.DetailWithResourceNote("ECS Service", ecsServiceName, "(not found)", true)
 			} else if conv.S(ecsService.Status) == "ACTIVE" {
+				ecsServiceActive = true
 				console.DetailWithResource("ECS Service", ecsServiceName)
 			} else {
+				console.DetailWithResourceNote("ECS Service", ecsServiceName, fmt.Sprintf("(%s)", conv.S(ecsService.Status)), true)
 				ecsService = nil
-				console.DetailWithResourceNote("ECS Service", ecsServiceName, conv.S(ecsService.Status), true)
 			}
 
 			// ECS Service Details
@@ -128,16 +128,35 @@ func (c *Command) Run() error {
 						conv.I64(lb.ContainerPort)))
 				}
 
-				console.DetailWithResource("Tasks (current/desired/pending)", fmt.Sprintf("%d/%d/%d",
-					conv.I64(ecsService.RunningCount),
-					conv.I64(ecsService.DesiredCount),
-					conv.I64(ecsService.PendingCount)))
+				isDeploying := false
+				if ecsService.Deployments != nil {
+					for _, d := range ecsService.Deployments {
+						switch conv.S(d.Status) {
+						case "ACTIVE":
+							isDeploying = true
+						case "PRIMARY":
+						}
+					}
+				}
+
+				if isDeploying {
+					console.DetailWithResourceNote("Tasks (current/desired/pending)", fmt.Sprintf("%d/%d/%d",
+						conv.I64(ecsService.RunningCount),
+						conv.I64(ecsService.DesiredCount),
+						conv.I64(ecsService.PendingCount)),
+						"(deploying)", true)
+				} else {
+					console.DetailWithResource("Tasks (current/desired/pending)", fmt.Sprintf("%d/%d/%d",
+						conv.I64(ecsService.RunningCount),
+						conv.I64(ecsService.DesiredCount),
+						conv.I64(ecsService.PendingCount)))
+				}
 
 			}
 		}
 
 		// Container Definition
-		if ecsTaskDefinition != nil {
+		if ecsServiceActive && ecsTaskDefinition != nil {
 			for _, containerDefinition := range ecsTaskDefinition.ContainerDefinitions {
 				console.Info("Container")
 
