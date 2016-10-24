@@ -52,43 +52,6 @@ func (c *Command) Run() error {
 	console.DetailWithResource("VPC", vpcID)
 	console.DetailWithResource("Subnets", strings.Join(subnetIDs, " "))
 
-	// launch config and auto scaling group
-	console.Info("Auto Scaling")
-	showContainerInstanceDetails := false
-
-	// launch configuration
-	launchConfigName := core.DefaultLaunchConfigurationName(clusterName)
-	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
-	if err != nil {
-		return console.ExitWithErrorString("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error())
-	}
-	if launchConfig == nil {
-		console.DetailWithResourceNote("EC2 Launch Configuration", launchConfigName, "(not found)", true)
-	} else {
-		console.DetailWithResource("EC2 Launch Configuration", launchConfigName)
-		showContainerInstanceDetails = true
-	}
-
-	// auto scaling group
-	autoScalingGroupName := core.DefaultAutoScalingGroupName(clusterName)
-	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
-	if err != nil {
-		return console.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
-	}
-	if autoScalingGroup == nil {
-		console.DetailWithResourceNote("EC2 Auto Scaling Group", autoScalingGroupName, "(not found)", true)
-	} else if utils.IsBlank(conv.S(autoScalingGroup.Status)) {
-		console.DetailWithResource("EC2 Auto Scaling Group", autoScalingGroupName)
-		console.DetailWithResource("EC2 Instances (current/desired/min/max)",
-			fmt.Sprintf("%d/%d/%d/%d",
-				len(autoScalingGroup.Instances),
-				conv.I64(autoScalingGroup.DesiredCapacity),
-				conv.I64(autoScalingGroup.MinSize),
-				conv.I64(autoScalingGroup.MaxSize)))
-	} else {
-		console.DetailWithResourceNote("EC2 Auto Scaling Group", autoScalingGroupName, "(deleting)", true)
-	}
-
 	// ECS
 	console.Info("ECS")
 	showECSClusterDetails := false
@@ -129,9 +92,19 @@ func (c *Command) Run() error {
 
 	}
 
-	// container instances
-	if showContainerInstanceDetails {
-		console.Info("ECS Container Instances")
+	// launch config and auto scaling group
+	console.Info("Auto Scaling")
+
+	// launch configuration
+	launchConfigName := core.DefaultLaunchConfigurationName(clusterName)
+	launchConfig, err := c.awsClient.AutoScaling().RetrieveLaunchConfiguration(launchConfigName)
+	if err != nil {
+		return console.ExitWithErrorString("Failed to retrieve Launch Configuration [%s]: %s", launchConfigName, err.Error())
+	}
+	if launchConfig == nil {
+		console.DetailWithResourceNote("EC2 Launch Configuration", launchConfigName, "(not found)", true)
+	} else {
+		console.DetailWithResource("EC2 Launch Configuration", launchConfigName)
 
 		instanceProfileARN := conv.S(launchConfig.IamInstanceProfile)
 		console.DetailWithResource("IAM Instance Profile", aws.GetIAMInstanceProfileNameFromARN(instanceProfileARN))
@@ -153,6 +126,98 @@ func (c *Command) Run() error {
 			securityGroupNames = append(securityGroupNames, conv.S(sg.GroupName))
 		}
 		console.DetailWithResource("Security Groups", strings.Join(securityGroupNames, " "))
+	}
+
+	// auto scaling group
+	autoScalingGroupName := core.DefaultAutoScalingGroupName(clusterName)
+	autoScalingGroup, err := c.awsClient.AutoScaling().RetrieveAutoScalingGroup(autoScalingGroupName)
+	if err != nil {
+		return console.ExitWithErrorString("Failed to retrieve Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
+	}
+	if autoScalingGroup == nil {
+		console.DetailWithResourceNote("EC2 Auto Scaling Group", autoScalingGroupName, "(not found)", true)
+	} else if utils.IsBlank(conv.S(autoScalingGroup.Status)) {
+		console.DetailWithResource("EC2 Auto Scaling Group", autoScalingGroupName)
+		console.DetailWithResource("EC2 Instances (current/desired/min/max)",
+			fmt.Sprintf("%d/%d/%d/%d",
+				len(autoScalingGroup.Instances),
+				conv.I64(autoScalingGroup.DesiredCapacity),
+				conv.I64(autoScalingGroup.MinSize),
+				conv.I64(autoScalingGroup.MaxSize)))
+	} else {
+		console.DetailWithResourceNote("EC2 Auto Scaling Group", autoScalingGroupName, "(deleting)", true)
+	}
+
+	// ECS Container Instances
+	if ecsCluster != nil && !conv.B(c.commandFlags.ExcludeContainerInstanceInfos) {
+		containerInstanceARNs, err := c.awsClient.ECS().ListContainerInstanceARNs(ecsClusterName)
+		if err != nil {
+			return console.ExitWithErrorString("Failed to list ECS Container Instances: %s", err.Error())
+		}
+		containerInstances, err := c.awsClient.ECS().RetrieveContainerInstances(ecsClusterName, containerInstanceARNs)
+		if err != nil {
+			return console.ExitWithErrorString("Failed to retrieve ECS Container Instances: %s", err.Error())
+		}
+
+		// retrieve EC2 Instance info
+		ec2InstanceIDs := []string{}
+		for _, ci := range containerInstances {
+			ec2InstanceIDs = append(ec2InstanceIDs, conv.S(ci.Ec2InstanceId))
+		}
+		ec2Instances, err := c.awsClient.EC2().RetrieveInstances(ec2InstanceIDs)
+		if err != nil {
+			return console.ExitWithErrorString("Failed to retrieve EC2 Instances: %s", err.Error())
+		}
+
+		for _, ci := range containerInstances {
+			console.Info("ECS Container Instance")
+
+			if conv.B(ci.AgentConnected) {
+				console.DetailWithResource("Status", conv.S(ci.Status))
+			} else {
+				console.DetailWithResourceNote("Status", conv.S(ci.Status), "(agent not connected)", true)
+			}
+
+			console.DetailWithResource("Tasks (running/pending)", fmt.Sprintf("%d/%d",
+				conv.I64(ci.RunningTasksCount),
+				conv.I64(ci.PendingTasksCount)))
+
+			var registeredCPU, registeredMemory, remainingCPU, remainingMemory int64
+			for _, rr := range ci.RegisteredResources {
+				switch strings.ToLower(conv.S(rr.Name)) {
+				case "cpu":
+					registeredCPU = conv.I64(rr.IntegerValue)
+				case "memory":
+					registeredMemory = conv.I64(rr.IntegerValue)
+				}
+			}
+			for _, rr := range ci.RemainingResources {
+				switch strings.ToLower(conv.S(rr.Name)) {
+				case "cpu":
+					remainingCPU = conv.I64(rr.IntegerValue)
+				case "memory":
+					remainingMemory = conv.I64(rr.IntegerValue)
+				}
+			}
+
+			console.DetailWithResource("CPU (remaining/registered)", fmt.Sprintf("%.2f/%.2f",
+				float64(remainingCPU)/1024.0, float64(registeredCPU)/1024.0))
+			console.DetailWithResource("Memory (remaining/registered)", fmt.Sprintf("%dM/%dM,",
+				remainingMemory, registeredMemory))
+
+			console.DetailWithResource("EC2 Instance", conv.S(ci.Ec2InstanceId))
+			for _, ei := range ec2Instances {
+				if conv.S(ei.InstanceId) == conv.S(ci.Ec2InstanceId) {
+					if !utils.IsBlank(conv.S(ei.PrivateIpAddress)) {
+						console.DetailWithResource("Private IP", conv.S(ei.PrivateIpAddress))
+					}
+					if !utils.IsBlank(conv.S(ei.PublicIpAddress)) {
+						console.DetailWithResource("Public IP", conv.S(ei.PublicIpAddress))
+					}
+					break
+				}
+			}
+		}
 	}
 
 	return nil

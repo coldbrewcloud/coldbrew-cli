@@ -300,6 +300,35 @@ func (c *Client) RetrieveTasks(clusterName string, taskARNs []string) ([]*_ecs.T
 	return res.Tasks, nil
 }
 
+func (c *Client) ListContainerInstanceARNs(clusterName string) ([]string, error) {
+	var nextToken *string
+	containerInstanceARNs := []string{}
+
+	for {
+		params := &_ecs.ListContainerInstancesInput{
+			Cluster:   _aws.String(clusterName),
+			NextToken: nextToken,
+		}
+
+		res, err := c.svc.ListContainerInstances(params)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, t := range res.ContainerInstanceArns {
+			containerInstanceARNs = append(containerInstanceARNs, conv.S(t))
+		}
+
+		if res.NextToken == nil {
+			break
+		} else {
+			nextToken = res.NextToken
+		}
+	}
+
+	return containerInstanceARNs, nil
+}
+
 func (c *Client) RetrieveContainerInstances(clusterName string, containerInstanceARNs []string) ([]*_ecs.ContainerInstance, error) {
 	params := &_ecs.DescribeContainerInstancesInput{
 		Cluster:            _aws.String(clusterName),
