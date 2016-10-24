@@ -24,7 +24,8 @@ type Command struct {
 func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) *kingpin.CmdClause {
 	c.globalFlags = globalFlags
 
-	cmd := ka.Command("status", "(status description goes here)")
+	cmd := ka.Command("status",
+		"See: "+console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-status"))
 	c.commandFlags = NewFlags(cmd)
 
 	return cmd

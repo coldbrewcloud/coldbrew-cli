@@ -25,7 +25,9 @@ type Command struct {
 func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) *kingpin.CmdClause {
 	c.globalFlags = globalFlags
 
-	cmd := ka.Command("delete", "(delete description goes here)")
+	cmd := ka.Command(
+		"delete",
+		"See: "+console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete"))
 	c.commandFlags = NewFlags(cmd)
 
 	return cmd
@@ -139,7 +141,7 @@ func (c *Command) Run() error {
 	console.Blank()
 
 	// confirmation
-	if !conv.B(c.commandFlags.ForceDelete) && !console.AskConfirm("Do you want to delete these resources?", false) {
+	if !conv.B(c.commandFlags.NoConfirm) && !console.AskConfirm("Do you want to delete these resources?", false) {
 		return nil
 	}
 

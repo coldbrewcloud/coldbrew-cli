@@ -25,7 +25,8 @@ type Command struct {
 func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) *kingpin.CmdClause {
 	c.globalFlags = globalFlags
 
-	cmd := ka.Command("cluster-scale", "(cluster-scale description goes here)")
+	cmd := ka.Command("cluster-scale",
+		"See: "+console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-scale"))
 	c.commandFlags = NewFlags(cmd)
 
 	c.clusterNameArg = cmd.Arg("cluster-name", "Cluster name").Required().String()

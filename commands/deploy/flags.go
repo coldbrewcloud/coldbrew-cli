@@ -24,12 +24,12 @@ type Flags struct {
 
 func NewFlags(kc *kingpin.CmdClause) *Flags {
 	return &Flags{
-		DockerfilePath: kc.Flag("dockerfile", "Dockerfile path").Default("./Dockerfile").String(),
+		DockerfilePath: kc.Flag("dockerfile", "Dockerfile path").Default("").String(),
 		DockerImage:    kc.Flag("docker-image", "Docker image (should include image tag)").String(),
 		Units:          kc.Flag("units", "Desired count").Default("-1").Int64(),
 		CPU:            kc.Flag("cpu", "Docker CPU resource (1 unit: 1024)").Default("-1").Float64(),
 		Memory:         kc.Flag("memory", "Docker memory resource").Default("").String(),
-		Envs:           kc.Flag("env", "App environment variable (\"key=value\")").Short('E').StringMap(),
+		Envs:           kc.Flag("env", "Environment variable (\"key=value\")").Short('E').StringMap(),
 	}
 }
 

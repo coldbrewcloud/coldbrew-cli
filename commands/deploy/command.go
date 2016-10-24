@@ -28,7 +28,8 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 	c.kingpinApp = ka
 	c.globalFlags = globalFlags
 
-	cmd := ka.Command("deploy", "(deploy description goes here)")
+	cmd := ka.Command("deploy",
+		"See: "+console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-deploy"))
 	c._commandFlags = NewFlags(cmd)
 
 	return cmd

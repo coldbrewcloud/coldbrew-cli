@@ -24,7 +24,8 @@ type Command struct {
 func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) *kingpin.CmdClause {
 	c.globalFlags = globalFlags
 
-	cmd := ka.Command("cluster-delete", "(cluster-delete description goes here)")
+	cmd := ka.Command("cluster-delete",
+		"See: "+console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-delete"))
 	c.commandFlags = NewFlags(cmd)
 
 	c.clusterNameArg = cmd.Arg("cluster-name", "Cluster name").Required().String()

@@ -16,6 +16,6 @@ func NewFlags(kc *kingpin.CmdClause) *Flags {
 		InitialCapacity: kc.Flag("instance-count", "Initial number of container instances").Default("1").Uint16(),
 		KeyPairName:     kc.Flag("key", "EC2 keypair name").String(),
 		InstanceProfile: kc.Flag("instance-profile", "IAM instance profile name for container instances").String(),
-		ForceCreate:     kc.Flag("force", "Create all resource with no confirmation").Short('y').Default("false").Bool(),
+		ForceCreate:     kc.Flag("yes", "Create all resource with no confirmation").Short('y').Default("false").Bool(),
 	}
 }
