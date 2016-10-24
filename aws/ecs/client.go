@@ -129,6 +129,19 @@ func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerNa
 	return res.TaskDefinition, nil
 }
 
+func (c *Client) RetrieveTaskDefinition(taskDefinitionName string) (*_ecs.TaskDefinition, error) {
+	params := &_ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: _aws.String(taskDefinitionName),
+	}
+
+	res, err := c.svc.DescribeTaskDefinition(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.TaskDefinition, nil
+}
+
 func (c *Client) RetrieveService(clusterName, serviceName string) (*_ecs.Service, error) {
 	if clusterName == "" {
 		return nil, errors.New("clusterName is empty")

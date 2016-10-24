@@ -11,6 +11,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/commands/create"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/delete"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/deploy"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/status"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
@@ -68,6 +69,7 @@ func registerCommands(ka *kingpin.Application, globalFlags *flags.GlobalFlags) m
 	cmds := []commands.Command{
 		&create.Command{},
 		&deploy.Command{},
+		&status.Command{},
 		&delete.Command{},
 		&clustercreate.Command{},
 		&clusterstatus.Command{},
