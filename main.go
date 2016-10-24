@@ -22,7 +22,7 @@ import (
 
 var (
 	appName = "coldbrew"
-	appHelp = "See: " + cc.Yellow("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags")
+	appHelp = "See: " + console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags")
 )
 
 type CLIApp struct {

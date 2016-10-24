@@ -23,6 +23,8 @@ func concat(fns ...colorFn) colorFn {
 }
 
 var (
+	ColorFnHelpLink = cc.Yellow
+
 	ColorFnAskQuestionNote         = cc.BlackH
 	ColorFnAskQuestionMain         = regularFn
 	ColorFnAskQuestionDefaultValue = cc.YellowH
