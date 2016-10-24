@@ -76,16 +76,19 @@ func ExitWithErrorString(format string, a ...interface{}) error {
 }
 
 func ExitWithError(err error) error {
+	errorfFn("\n")
 	if ei, ok := err.(*core.Error); ok {
-		errorfFn("%s %s %s\n",
+		errorfFn("%s %s\n       %s\n",
 			ColorFnErrorHeader("Error:"),
 			ColorFnErrorMessage(ei.Error()),
-			ColorFnSideNote("(more info: "+ei.ExtraInfo()+")"))
+			ColorFnSideNote("(See: "+ei.ExtraInfo()+")"))
 	} else {
 		errorfFn("%s %s\n",
 			ColorFnErrorHeader("Error:"),
 			ColorFnErrorMessage(err.Error()))
 	}
+	errorfFn("\n")
+
 	os.Exit(100)
 	return nil
 }

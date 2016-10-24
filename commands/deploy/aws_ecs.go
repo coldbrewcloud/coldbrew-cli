@@ -65,6 +65,13 @@ func (c *Command) createOrUpdateECSService(ecsTaskDefinitionARN string) error {
 		if ecsService.LoadBalancers != nil && len(ecsService.LoadBalancers) > 0 {
 			elbLoadBalancerName = conv.S(ecsService.LoadBalancers[0].LoadBalancerName)
 			elbTargetGroupARN = conv.S(ecsService.LoadBalancers[0].TargetGroupArn)
+
+			// check if task container port has changed or not
+			if conv.I64(ecsService.LoadBalancers[0].ContainerPort) != int64(conv.U16(c.conf.Port)) {
+				return core.NewErrorExtraInfo(
+					errors.New("App port cannot be changed."),
+					"https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-Changes-and-Their-Effects#app-level-changes")
+			}
 		}
 
 		if err := c.updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, elbLoadBalancerName, elbTargetGroupARN); err != nil {
@@ -113,7 +120,6 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 }
 
 func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, elbLoadBalancerName, elbTargetGroupARN string) error {
-
 	// check if ELB Target Group health check needs to be updated
 	if elbTargetGroupARN != "" {
 		if err := c.checkLoadBalancerHealthCheckChanges(elbTargetGroupARN); err != nil {
