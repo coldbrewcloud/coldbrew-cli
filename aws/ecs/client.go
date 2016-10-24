@@ -7,6 +7,7 @@ import (
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	_ecs "github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
 type Client struct {
@@ -253,4 +254,62 @@ func (c *Client) DeleteService(clusterName, serviceName string) error {
 	_, err := c.svc.DeleteService(params)
 
 	return err
+}
+
+func (c *Client) ListServiceTaskARNs(clusterName, serviceName string) ([]string, error) {
+	var nextToken *string
+	taskARNs := []string{}
+
+	for {
+		params := &_ecs.ListTasksInput{
+			Cluster:     _aws.String(clusterName),
+			ServiceName: _aws.String(serviceName),
+			NextToken:   nextToken,
+		}
+
+		res, err := c.svc.ListTasks(params)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, t := range res.TaskArns {
+			taskARNs = append(taskARNs, conv.S(t))
+		}
+
+		if res.NextToken == nil {
+			break
+		} else {
+			nextToken = res.NextToken
+		}
+	}
+
+	return taskARNs, nil
+}
+
+func (c *Client) RetrieveTasks(clusterName string, taskARNs []string) ([]*_ecs.Task, error) {
+	params := &_ecs.DescribeTasksInput{
+		Cluster: _aws.String(clusterName),
+		Tasks:   _aws.StringSlice(taskARNs),
+	}
+
+	res, err := c.svc.DescribeTasks(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Tasks, nil
+}
+
+func (c *Client) RetrieveContainerInstances(clusterName string, containerInstanceARNs []string) ([]*_ecs.ContainerInstance, error) {
+	params := &_ecs.DescribeContainerInstancesInput{
+		Cluster:            _aws.String(clusterName),
+		ContainerInstances: _aws.StringSlice(containerInstanceARNs),
+	}
+
+	res, err := c.svc.DescribeContainerInstances(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.ContainerInstances, nil
 }

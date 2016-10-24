@@ -7,6 +7,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/commands"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clustercreate"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterdelete"
+	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterscale"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/clusterstatus"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/create"
 	"github.com/coldbrewcloud/coldbrew-cli/commands/delete"
@@ -73,6 +74,7 @@ func registerCommands(ka *kingpin.Application, globalFlags *flags.GlobalFlags) m
 		&delete.Command{},
 		&clustercreate.Command{},
 		&clusterstatus.Command{},
+		&clusterscale.Command{},
 		&clusterdelete.Command{},
 	}
 	for _, c := range cmds {

@@ -84,6 +84,7 @@ func (c *Client) CreateAutoScalingGroup(autoScalingGroupName, launchConfiguratio
 
 	return nil
 }
+
 func (c *Client) RetrieveAutoScalingGroup(autoScalingGroupName string) (*_autoscaling.Group, error) {
 	params := &_autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: _aws.StringSlice([]string{autoScalingGroupName}),
@@ -99,6 +100,22 @@ func (c *Client) RetrieveAutoScalingGroup(autoScalingGroupName string) (*_autosc
 	}
 
 	return nil, nil
+}
+
+func (c *Client) UpdateAutoScalingGroupCapacity(autoScalingGroupName string, minCapacity, maxCapacity, desiredCapacity uint16) error {
+	params := &_autoscaling.UpdateAutoScalingGroupInput{
+		AutoScalingGroupName: _aws.String(autoScalingGroupName),
+		DesiredCapacity:      _aws.Int64(int64(desiredCapacity)),
+		MaxSize:              _aws.Int64(int64(maxCapacity)),
+		MinSize:              _aws.Int64(int64(minCapacity)),
+	}
+
+	_, err := c.svc.UpdateAutoScalingGroup(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) SetAutoScalingGroupDesiredCapacity(autoScalingGroupName string, desiredCapacity uint16) error {

@@ -10,6 +10,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -99,8 +100,8 @@ func (c *Command) Run() error {
 
 		// ECS Service
 		ecsServiceActive := false
+		ecsServiceName := core.DefaultECSServiceName(appName)
 		if ecsCluster != nil {
-			ecsServiceName := core.DefaultECSServiceName(appName)
 			ecsService, err := c.awsClient.ECS().RetrieveService(ecsClusterName, ecsServiceName)
 			if err != nil {
 				return console.ExitWithErrorString("Failed to retrieve ECS Service [%s]: %s", ecsServiceName, err.Error())
@@ -151,7 +152,6 @@ func (c *Command) Run() error {
 						conv.I64(ecsService.DesiredCount),
 						conv.I64(ecsService.PendingCount)))
 				}
-
 			}
 		}
 
@@ -181,6 +181,67 @@ func (c *Command) Run() error {
 			}
 		}
 
+		// Tasks
+		if ecsServiceActive {
+			// retrieve ECS tasks info
+			taskARNs, err := c.awsClient.ECS().ListServiceTaskARNs(ecsClusterName, ecsServiceName)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to list ECS Tasks for ECS Service [%s]: %s", ecsServiceName, err.Error())
+			}
+			tasks, err := c.awsClient.ECS().RetrieveTasks(ecsClusterName, taskARNs)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to retrieve ECS Tasks for ECS Service [%s]: %s", ecsServiceName, err.Error())
+			}
+
+			// retrieve container instance info
+			containerInstanceARNs := []string{}
+			for _, task := range tasks {
+				containerInstanceARNs = append(containerInstanceARNs, conv.S(task.ContainerInstanceArn))
+			}
+			containerInstances, err := c.awsClient.ECS().RetrieveContainerInstances(ecsClusterName, containerInstanceARNs)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to retrieve ECS Container Instances: %s", err.Error())
+			}
+
+			// retrieve EC2 Instance info
+			ec2InstanceIDs := []string{}
+			for _, ci := range containerInstances {
+				ec2InstanceIDs = append(ec2InstanceIDs, conv.S(ci.Ec2InstanceId))
+			}
+			ec2Instances, err := c.awsClient.EC2().RetrieveInstances(ec2InstanceIDs)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to retrieve EC2 Instances: %s", err.Error())
+			}
+
+			for _, task := range tasks {
+				console.Info("ECS Task")
+
+				taskDefinition := aws.GetECSTaskDefinitionFamilyAndRevisionFromARN(conv.S(task.TaskDefinitionArn))
+				console.DetailWithResource("Task Definition", taskDefinition)
+
+				console.DetailWithResource("Status (current/desired)", fmt.Sprintf("%s/%s",
+					conv.S(task.LastStatus), conv.S(task.DesiredStatus)))
+
+				for _, ci := range containerInstances {
+					if conv.S(task.ContainerInstanceArn) == conv.S(ci.ContainerInstanceArn) {
+						console.DetailWithResource("EC2 Instance", conv.S(ci.Ec2InstanceId))
+
+						for _, ec2Instance := range ec2Instances {
+							if conv.S(ci.Ec2InstanceId) == conv.S(ec2Instance.InstanceId) {
+								if !utils.IsBlank(conv.S(ec2Instance.PrivateIpAddress)) {
+									console.DetailWithResource("Private IP", conv.S(ec2Instance.PrivateIpAddress))
+								}
+								if !utils.IsBlank(conv.S(ec2Instance.PublicIpAddress)) {
+									console.DetailWithResource("Public IP", conv.S(ec2Instance.PublicIpAddress))
+								}
+								break
+							}
+						}
+						break
+					}
+				}
+			}
+		}
 	}
 
 	return nil

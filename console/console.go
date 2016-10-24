@@ -72,7 +72,7 @@ func Debugf(format string, a ...interface{}) (int, error) {
 }
 
 func ExitWithErrorString(format string, a ...interface{}) error {
-	return ExitWithError(fmt.Errorf(format, a))
+	return ExitWithError(fmt.Errorf(format, a...))
 }
 
 func ExitWithError(err error) error {

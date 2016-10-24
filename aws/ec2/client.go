@@ -376,3 +376,31 @@ func (c *Client) RetrieveTags(resourceID string) (map[string]string, error) {
 
 	return tags, nil
 }
+
+func (c *Client) RetrieveInstances(instanceIDs []string) ([]*_ec2.Instance, error) {
+	var nextToken *string
+	instances := []*_ec2.Instance{}
+
+	for {
+		params := &_ec2.DescribeInstancesInput{
+			NextToken: nextToken,
+		}
+
+		res, err := c.svc.DescribeInstances(params)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range res.Reservations {
+			instances = append(instances, r.Instances...)
+		}
+
+		if res.NextToken == nil {
+			break
+		} else {
+			nextToken = res.NextToken
+		}
+	}
+
+	return instances, nil
+}
