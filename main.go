@@ -22,7 +22,7 @@ import (
 
 const (
 	appName = "coldbrew"
-	appHelp = "(application description goes here)"
+	appHelp = "See https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags for more details on following Flags"
 )
 
 type CLIApp struct {

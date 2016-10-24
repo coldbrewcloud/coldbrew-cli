@@ -30,15 +30,15 @@ type GlobalFlags struct {
 
 func NewGlobalFlags(ka *kingpin.Application) *GlobalFlags {
 	return &GlobalFlags{
-		ConfigFile:       ka.Flag("config", "Configuration file path").Short('C').String(),
-		ConfigFileFormat: ka.Flag("config-format", "Configuraiton file format (JSON/YAML)").Default(GlobalFlagsConfigFileFormatYAML).String(),
 		AppDirectory:     ka.Flag("app-dir", "Application directory").Short('D').Default(".").String(),
-		DisableColoring:  ka.Flag("disable-color", "Disable color outputs").Bool(),
+		ConfigFile:       ka.Flag("config", "Configuration file path").Short('C').Default("").String(),
+		ConfigFileFormat: ka.Flag("config-format", "Configuraiton file format (JSON/YAML)").Default(GlobalFlagsConfigFileFormatYAML).String(),
+		DisableColoring:  ka.Flag("disable-color", "Disable colored outputs").Bool(),
 		Verbose:          ka.Flag("verbose", "Enable verbose logging").Short('V').Default("false").Bool(),
-		AWSAccessKey:     ka.Flag("aws-access-key", "AWS access key (default: $AWS_ACCESS_KEY_ID)").Envar("AWS_ACCESS_KEY_ID").Default("").String(),
-		AWSSecretKey:     ka.Flag("aws-secret-key", "AWS secret key (default: $AWS_SECRET_ACCESS_KEY)").Envar("AWS_SECRET_ACCESS_KEY").Default("").String(),
-		AWSRegion:        ka.Flag("aws-region", "AWS region name (default: $AWS_REGION)").Envar("AWS_REGION").Default("us-west-2").String(),
-		AWSVPC:           ka.Flag("aws-vpc", "AWS VPC ID").Envar("AWS_VPC").String(),
+		AWSAccessKey:     ka.Flag("aws-access-key", "AWS Access Key ID ($AWS_ACCESS_KEY_ID)").Envar("AWS_ACCESS_KEY_ID").Default("").String(),
+		AWSSecretKey:     ka.Flag("aws-secret-key", "AWS Secret Access Key ($AWS_SECRET_ACCESS_KEY)").Envar("AWS_SECRET_ACCESS_KEY").Default("").String(),
+		AWSRegion:        ka.Flag("aws-region", "AWS region name ($AWS_REGION)").Envar("AWS_REGION").Default("us-west-2").String(),
+		AWSVPC:           ka.Flag("aws-vpc", "AWS VPC ID ($AWS_VPC)").Envar("AWS_VPC").Default("").String(),
 	}
 }
 
