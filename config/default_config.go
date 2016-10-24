@@ -27,10 +27,10 @@ func DefaultConfig(appName string) *Config {
 	// health check
 	conf.LoadBalancer.HealthCheck.Path = conv.SP("/")
 	conf.LoadBalancer.HealthCheck.Status = conv.SP("200-299")
-	conf.LoadBalancer.HealthCheck.Interval = conv.SP("30s")
+	conf.LoadBalancer.HealthCheck.Interval = conv.SP("15s")
 	conf.LoadBalancer.HealthCheck.Timeout = conv.SP("10s")
-	conf.LoadBalancer.HealthCheck.HealthyLimit = conv.U16P(5)
-	conf.LoadBalancer.HealthCheck.UnhealthyLimit = conv.U16P(5)
+	conf.LoadBalancer.HealthCheck.HealthyLimit = conv.U16P(3)
+	conf.LoadBalancer.HealthCheck.UnhealthyLimit = conv.U16P(3)
 
 	// AWS
 	{

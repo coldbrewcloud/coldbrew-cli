@@ -115,8 +115,10 @@ func (c *Command) createECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, elbLoadBalancerName, elbTargetGroupARN string) error {
 
 	// check if ELB Target Group health check needs to be updated
-	if err := c.checkLoadBalancerHealthCheckChanges(elbTargetGroupARN); err != nil {
-		return err
+	if elbTargetGroupARN != "" {
+		if err := c.checkLoadBalancerHealthCheckChanges(elbTargetGroupARN); err != nil {
+			return err
+		}
 	}
 
 	// update ECS service

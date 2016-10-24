@@ -157,7 +157,7 @@ func (c *Command) Run() error {
 				return console.ExitWithError(err)
 			}
 		} else {
-			console.RemovingResource("Deleting ECS Service", ecsServiceName, true)
+			console.RemovingResource("Deleting (and draining) ECS Service", ecsServiceName, true)
 
 			// delete ECS Service
 			if err := c.awsClient.ECS().DeleteService(ecsClusterName, ecsServiceName); err != nil {
