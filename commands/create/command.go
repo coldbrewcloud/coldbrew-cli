@@ -14,6 +14,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/flags"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
+	"github.com/d5/cc"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -26,7 +27,9 @@ type Command struct {
 func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) *kingpin.CmdClause {
 	c.globalFlags = globalFlags
 
-	cmd := ka.Command("init", "(init description goes here)").Alias("create")
+	cmd := ka.Command(
+		"init",
+		"See: "+cc.Yellow("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-init"))
 	c.commandFlags = NewFlags(cmd)
 
 	return cmd

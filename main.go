@@ -20,9 +20,9 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-const (
+var (
 	appName = "coldbrew"
-	appHelp = "See https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags for more details on following Flags"
+	appHelp = "See: " + cc.Yellow("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags")
 )
 
 type CLIApp struct {
