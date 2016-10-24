@@ -44,6 +44,11 @@ func (c *Command) Run() error {
 
 	// cluster name
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
+	if !core.ClusterNameRE.MatchString(clusterName) {
+		return console.ExitWithError(core.NewErrorExtraInfo(
+			fmt.Errorf("Invalid cluster name [%s]", clusterName), "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File#cluster"))
+	}
+
 	console.Info("Cluster")
 	console.DetailWithResource("Name", clusterName)
 

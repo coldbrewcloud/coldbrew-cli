@@ -37,6 +37,10 @@ func (c *Command) Run() error {
 	c.awsClient = c.globalFlags.GetAWSClient()
 
 	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
+	if !core.ClusterNameRE.MatchString(clusterName) {
+		return console.ExitWithError(core.NewErrorExtraInfo(
+			fmt.Errorf("Invalid cluster name [%s]", clusterName), "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File#cluster"))
+	}
 
 	console.Info("Determining AWS resources that need to be deleted...")
 	deleteECSCluster := false

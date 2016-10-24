@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
@@ -35,6 +37,12 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 
 func (c *Command) Run() error {
 	c.awsClient = c.globalFlags.GetAWSClient()
+
+	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
+	if !core.ClusterNameRE.MatchString(clusterName) {
+		return console.ExitWithError(core.NewErrorExtraInfo(
+			fmt.Errorf("Invalid cluster name [%s]", clusterName), "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File#cluster"))
+	}
 
 	// AWS networking
 	_, vpcID, subnetIDs, err := c.getAWSInfo()
@@ -69,8 +77,6 @@ func (c *Command) Run() error {
 	if keyPairInfo == nil {
 		return console.ExitWithErrorString("EC2 Key Pair [%s] was not found.", keyPairName)
 	}
-
-	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
 
 	console.Info("Determining AWS resources to create...")
 	createECSCluster := false

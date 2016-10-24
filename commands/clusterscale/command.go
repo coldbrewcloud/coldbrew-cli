@@ -5,6 +5,8 @@ import (
 
 	"time"
 
+	"strings"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
@@ -39,7 +41,11 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 func (c *Command) Run() error {
 	c.awsClient = c.globalFlags.GetAWSClient()
 
-	clusterName := conv.S(c.clusterNameArg)
+	clusterName := strings.TrimSpace(conv.S(c.clusterNameArg))
+	if !core.ClusterNameRE.MatchString(clusterName) {
+		return console.ExitWithError(core.NewErrorExtraInfo(
+			fmt.Errorf("Invalid cluster name [%s]", clusterName), "https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File#cluster"))
+	}
 
 	autoScalingGroupName := core.DefaultAutoScalingGroupName(clusterName)
 
