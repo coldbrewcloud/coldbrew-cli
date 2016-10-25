@@ -126,16 +126,20 @@ func (c *Command) Run() error {
 	// AWS
 	{
 		// elb lb name
-		conf.AWS.ELBLoadBalancerName = conv.SP(c.askQuestion("ELB load balancer name", "ELB Load Balancer Name", conv.S(defConf.AWS.ELBLoadBalancerName)))
+		conf.AWS.ELBLoadBalancerName = conv.SP(c.askQuestion("ELB load balancer name", "ELB Load Balancer Name",
+			core.DefaultELBLoadBalancerName(conv.S(conf.Name))))
 
 		// elb target name
-		conf.AWS.ELBTargetGroupName = conv.SP(c.askQuestion("ELB target name", "ELB Target Group Name", conv.S(defConf.AWS.ELBTargetGroupName)))
+		conf.AWS.ELBTargetGroupName = conv.SP(c.askQuestion("ELB target name", "ELB Target Group Name",
+			core.DefaultELBTargetGroupName(conv.S(conf.Name))))
 
 		// elb security group
-		conf.AWS.ELBSecurityGroupName = conv.SP(c.askQuestion("Security group ID/name for ELB load balancer. Leave it blank to create default one.", "ELB Security Group", conv.S(defConf.AWS.ELBSecurityGroupName)))
+		conf.AWS.ELBSecurityGroupName = conv.SP(c.askQuestion("Security group ID/name for ELB load balancer. Leave it blank to create default one.", "ELB Security Group",
+			core.DefaultELBLoadBalancerSecurityGroupName(conv.S(conf.Name))))
 
 		// ecr repo name
-		conf.AWS.ECRRepositoryName = conv.SP(c.askQuestion("ECR repository name", "ECR Namespace", conv.S(defConf.AWS.ECRRepositoryName)))
+		conf.AWS.ECRRepositoryName = conv.SP(c.askQuestion("ECR repository name", "ECR Namespace",
+			core.DefaultECRRepository(conv.S(conf.Name))))
 	}
 
 	// Docker

@@ -1,8 +1,7 @@
 package config
 
 import (
-	"fmt"
-
+	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -37,32 +36,32 @@ func DefaultConfig(appName string) *Config {
 		// ELB name: cannot exceed 32 chars
 		elbLoadBalancerName := ""
 		if len(appName) > 28 {
-			elbLoadBalancerName = fmt.Sprintf("%s-elb", appName[:28])
+			elbLoadBalancerName = core.DefaultELBLoadBalancerName(appName[:28])
 		} else {
-			elbLoadBalancerName = fmt.Sprintf("%s-elb", appName)
+			elbLoadBalancerName = core.DefaultELBLoadBalancerName(appName)
 		}
 		conf.AWS.ELBLoadBalancerName = conv.SP(elbLoadBalancerName)
 
 		// ELB target group name: cannot exceed 32 chars
 		elbLoadBalancerTargetGroupName := ""
 		if len(appName) > 25 {
-			elbLoadBalancerTargetGroupName = fmt.Sprintf("%s-elb-tg", appName[:25])
+			elbLoadBalancerTargetGroupName = core.DefaultELBTargetGroupName(appName[:25])
 		} else {
-			elbLoadBalancerTargetGroupName = fmt.Sprintf("%s-elb-tg", appName)
+			elbLoadBalancerTargetGroupName = core.DefaultELBTargetGroupName(appName)
 		}
 		conf.AWS.ELBTargetGroupName = conv.SP(elbLoadBalancerTargetGroupName)
 
 		// ELB security group
 		elbSecurityGroupName := ""
 		if len(appName) > 25 {
-			elbSecurityGroupName = fmt.Sprintf("%s-elb-sg", appName[:25])
+			elbSecurityGroupName = core.DefaultELBLoadBalancerSecurityGroupName(appName[:25])
 		} else {
-			elbSecurityGroupName = fmt.Sprintf("%s-elb-sg", appName)
+			elbSecurityGroupName = core.DefaultELBLoadBalancerSecurityGroupName(appName)
 		}
 		conf.AWS.ELBSecurityGroupName = conv.SP(elbSecurityGroupName)
 
 		// ECR Repository name
-		conf.AWS.ECRRepositoryName = conv.SP(fmt.Sprintf("coldbrew/%s", conv.S(conf.Name)))
+		conf.AWS.ECRRepositoryName = conv.SP(core.DefaultECRRepository(appName))
 	}
 
 	// Docker
