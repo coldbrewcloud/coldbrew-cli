@@ -7,7 +7,7 @@ type Config struct {
 	CPU          *float64           `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory       *string            `json:"memory,omitempty" yaml:"memory,omitempty"`
 	Units        *uint16            `json:"units,omitempty" yaml:"units,omitempty"`
-	Env          map[string]string  `json:"env" yaml:"env"`
+	Env          map[string]string  `json:"env,omitempty" yaml:"env,omitempty"`
 	LoadBalancer ConfigLoadBalancer `json:"load_balancer" yaml:"load_balancer"`
 	AWS          ConfigAWS          `json:"aws" yaml:"aws"`
 	Docker       ConfigDocker       `json:"docker" yaml:"docker"`
