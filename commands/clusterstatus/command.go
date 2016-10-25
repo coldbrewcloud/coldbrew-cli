@@ -70,6 +70,7 @@ func (c *Command) Run() error {
 	}
 	if ecsCluster == nil || conv.S(ecsCluster.Status) == "INACTIVE" {
 		console.DetailWithResourceNote("ECS Cluster", ecsClusterName, "(not found)", true)
+		ecsCluster = nil
 	} else {
 		console.DetailWithResource("ECS Cluster", ecsClusterName)
 		showECSClusterDetails = true
