@@ -4,16 +4,19 @@
 
 **coldbrew-cli** automates your Docker container deployments on AWS.
 
-## Install
+## Getting Started
 
-Binary distribution:
+### Install
+
+**coldbrew-cli** is distributed as a binary package.
+
 - Below are the available downloads for the latest version of **coldbrew-cli**. Please download the proper package for your operations system and architecture.
   - [Linux 64-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/linux/amd64/coldbrew) / [32-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/linux/386/coldbrew)
   - [Mac 64-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/darwin/amd64/coldbrew) / [32-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/darwin/386/coldbrew)
   - [Windows 64-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/windows/amd64/coldbrew.exe) / [32-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/windows/386/coldbrew.exe)
 - **coldbrew-cli** is a single binary executable (`coldbrew` or `coldbrew.exe` for Windows). Once downloaded, you can move or copy the executable into your `$PATH` (e.g. `/usr/local/bin` on Mac).
 
-Build from source:
+Alternatively you can build the executable from the source:
 - You need [Go](https://golang.org/) to build the source.
 - `git clone https://github.com/coldbrewcloud/coldbrew-cli.git`
 - `cd coldbrew-cli`
