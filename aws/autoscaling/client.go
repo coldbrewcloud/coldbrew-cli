@@ -8,6 +8,7 @@ import (
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	_autoscaling "github.com/aws/aws-sdk-go/service/autoscaling"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -26,10 +27,13 @@ func (c *Client) CreateLaunchConfiguration(launchConfigurationName, instanceType
 		IamInstanceProfile:      _aws.String(iamInstanceProfileNameOrARN),
 		ImageId:                 _aws.String(imageID),
 		InstanceType:            _aws.String(instanceType),
-		KeyName:                 _aws.String(keyPairName),
 		LaunchConfigurationName: _aws.String(launchConfigurationName),
 		SecurityGroups:          _aws.StringSlice(securityGroupIDs),
 		UserData:                _aws.String(userData),
+	}
+
+	if !utils.IsBlank(keyPairName) {
+		params.KeyName = _aws.String(keyPairName)
 	}
 
 	_, err := c.svc.CreateLaunchConfiguration(params)

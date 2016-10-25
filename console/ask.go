@@ -14,7 +14,7 @@ func AskConfirmWithNote(message string, defaultYes bool, note string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	if note != "" {
-		stdout("%\n", ColorFnAskConfirmNote(note))
+		stdout("%s\n", ColorFnAskConfirmNote(note))
 	}
 
 	for {

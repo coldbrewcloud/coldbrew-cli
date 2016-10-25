@@ -51,31 +51,45 @@ func (c *Command) Run() error {
 	}
 
 	// keypair
-	keyPairName := strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
-	if utils.IsBlank(keyPairName) {
-		keyPairs, err := c.awsClient.EC2().ListKeyPairs()
-		if err != nil {
-			return console.ExitWithErrorString("Failed to list EC2 Key Pairs: %s", err.Error())
+	keyPairName := ""
+	if !conv.B(c.commandFlags.NoKeyPair) {
+		strings.TrimSpace(conv.S(c.commandFlags.KeyPairName))
+		if utils.IsBlank(keyPairName) {
+			keyPairs, err := c.awsClient.EC2().ListKeyPairs()
+			if err != nil {
+				return console.ExitWithErrorString("Failed to list EC2 Key Pairs: %s", err.Error())
+			}
+
+			defaultKeyPairName := ""
+			if len(keyPairs) > 0 {
+				defaultKeyPairName = conv.S(keyPairs[0].KeyName)
+
+				keyPairName = console.AskQuestionWithNote(
+					"Enter EC2 Key Pair name",
+					defaultKeyPairName,
+					"EC2 Key Pair name is required to create a new cluster.")
+			} else {
+				if !conv.B(c.commandFlags.ForceCreate) && !console.AskConfirmWithNote(
+					"Do you still want to create cluster without EC2 Key Pair?",
+					false,
+					"Could not find any EC2 Key Pairs available to use.") {
+					console.Info("Please create an EC2 Key Pair and try again.")
+					return nil
+				}
+			}
+
 		}
 
-		defaultKeyPairName := ""
-		if len(keyPairs) > 0 {
-			defaultKeyPairName = conv.S(keyPairs[0].KeyName)
+		// check if key pair exists
+		if !utils.IsBlank(keyPairName) {
+			keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to retrieve EC2 Key Pair [%s]: %s", keyPairName, err.Error())
+			}
+			if keyPairInfo == nil {
+				return console.ExitWithErrorString("EC2 Key Pair [%s] was not found.", keyPairName)
+			}
 		}
-
-		keyPairName = console.AskQuestionWithNote(
-			"Enter key pair name",
-			defaultKeyPairName,
-			"Key pair name is required to create a new cluster.")
-	}
-
-	// check if key pair exists
-	keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
-	if err != nil {
-		return console.ExitWithErrorString("Failed to retrieve EC2 Key Pair [%s]: %s", keyPairName, err.Error())
-	}
-	if keyPairInfo == nil {
-		return console.ExitWithErrorString("EC2 Key Pair [%s] was not found.", keyPairName)
 	}
 
 	console.Info("Determining AWS resources to create...")
@@ -203,15 +217,6 @@ func (c *Command) Run() error {
 	// create launch configuration
 	if createLaunchConfiguration {
 		console.AddingResource("Creating EC2 Launch Configuration", launchConfigName, true)
-
-		// key pair
-		keyPairInfo, err := c.awsClient.EC2().RetrieveKeyPair(keyPairName)
-		if err != nil {
-			return console.ExitWithErrorString("Failed to retrieve key pair info [%s]: %s", keyPairName, err.Error())
-		}
-		if keyPairInfo == nil {
-			return console.ExitWithErrorString("Key pair [%s] was not found\n", keyPairName)
-		}
 
 		// container instance type
 		instanceType := strings.TrimSpace(conv.S(c.commandFlags.InstanceType))
