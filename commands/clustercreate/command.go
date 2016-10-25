@@ -64,10 +64,14 @@ func (c *Command) Run() error {
 			if len(keyPairs) > 0 {
 				defaultKeyPairName = conv.S(keyPairs[0].KeyName)
 
-				keyPairName = console.AskQuestionWithNote(
-					"Enter EC2 Key Pair name",
-					defaultKeyPairName,
-					"EC2 Key Pair name is required to create a new cluster.")
+				if conv.B(c.commandFlags.ForceCreate) {
+					keyPairName = defaultKeyPairName
+				} else {
+					keyPairName = console.AskQuestionWithNote(
+						"Enter EC2 Key Pair name",
+						defaultKeyPairName,
+						"EC2 Key Pair name is required to create a new cluster.")
+				}
 			} else {
 				if !conv.B(c.commandFlags.ForceCreate) && !console.AskConfirmWithNote(
 					"Do you still want to create cluster without EC2 Key Pair?",
@@ -221,10 +225,16 @@ func (c *Command) Run() error {
 		// container instance type
 		instanceType := strings.TrimSpace(conv.S(c.commandFlags.InstanceType))
 		if instanceType == "" {
-			instanceType = console.AskQuestionWithNote(
-				"Enter instance type",
-				core.DefaultContainerInstanceType(),
-				"EC2 Instance Type for ECS Container Instances")
+			defaultInstanceType := core.DefaultContainerInstanceType()
+
+			if conv.B(c.commandFlags.ForceCreate) {
+				instanceType = defaultInstanceType
+			} else {
+				instanceType = console.AskQuestionWithNote(
+					"Enter instance type",
+					defaultInstanceType,
+					"EC2 Instance Type for ECS Container Instances")
+			}
 		}
 
 		// container instance image ID
