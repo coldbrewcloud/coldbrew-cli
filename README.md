@@ -6,33 +6,13 @@
 
 ## Getting Started
 
-### Install CLI
+### Install and Configure CLI
 
-**coldbrew-cli** is distributed as a binary package.
+- [Download](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Downloads) CLI executable (`coldbrew` or `coldbrew.exe`) and put it in your $PATH.
+- Configure AWS credentials, region, and VPC through [environment variables](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Environment-Variables) or [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags).
+- [Prerequisites] Make sure you have [Dockerfile](https://docs.docker.com/engine/reference/builder/) for your application, and, [docker](https://docs.docker.com/engine/installation/) installed in your system.
 
-- Below are the available downloads for the latest version of **coldbrew-cli**. Please download the proper package for your operations system and architecture.
-  - [Linux 64-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/linux/amd64/coldbrew) / [32-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/linux/386/coldbrew)
-  - [Mac 64-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/darwin/amd64/coldbrew) / [32-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/darwin/386/coldbrew)
-  - [Windows 64-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/windows/amd64/coldbrew.exe) / [32-bit](https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/cli/windows/386/coldbrew.exe)
-- **coldbrew-cli** is a single binary executable (`coldbrew` or `coldbrew.exe` for Windows). Once downloaded, you can move or copy the executable into your `$PATH` (e.g. `/usr/local/bin` on Mac).
 
-Alternatively you can build the executable from the source:
-- You need [Go](https://golang.org/) to build the source.
-- `git clone https://github.com/coldbrewcloud/coldbrew-cli.git`
-- `cd coldbrew-cli`
-- `go build -o coldbrew`
-- Now you have `coldbrew` executable.
-
-### Configure CLI
-
-**coldbrew-cli** uses several environment variables to take your AWS keys, region name, and, VPC ID.
-
-- `$AWS_ACCESS_KEY_ID`: AWS Access Key ID _(required)_ 
-- `$AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key _(required)_
-- `$AWS_REGION`: AWS  region name _(default: `"us-west-2"`)_
-- `$AWS_VPC`: AWS VPC ID _(optional if you have [default VPC configured](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/default-vpc.html), required otherwise)_
-
-See [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags) in case you do not want to use environment variables.
 
 ### Core Concepts
 
