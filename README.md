@@ -36,7 +36,7 @@ See [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Fl
 
 ### Core Concepts
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/concept.png" width="350">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/concept.png?v=1" width="350">
 
 **coldbrew-cli** has 2 simple concepts, applications (apps) and clusters. Long story short, apps are the minimum deployment units, and, clusters are where one or more apps are running together sharing some of AWS resources. Typical setup would be a couple of applications (for your projects) running in a cluster. See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for more details.
 
@@ -46,7 +46,7 @@ See [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Fl
 coldbrew cluster-create cluster1
 ```
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif" width="700">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif?v=1" width="700">
 
 ### Init App
 
@@ -56,11 +56,15 @@ Here we assume that you already have your `Dockerfile`
 coldbrew init --default
 ```
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif" width="700">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="700">
 
 ### Deploy App
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif" width="700">
+```bash
+coldbrew deploy
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif?v=1" width="700">
 
 
 
