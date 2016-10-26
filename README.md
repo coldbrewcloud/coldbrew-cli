@@ -8,7 +8,7 @@
 
 ### Install and Configure CLI
 
-- [Download](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Downloads) CLI executable (`coldbrew` or `coldbrew.exe`) and put it in your $PATH.
+- [Download](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Downloads) CLI executable (`coldbrew` or `coldbrew.exe`) and put it in your `$PATH`.
 - Configure AWS credentials, region, and VPC through [environment variables](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Environment-Variables) or [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags).
 - Make sure you have [docker](https://docs.docker.com/engine/installation/) installed in your system. You will also need [Dockerfile](https://docs.docker.com/engine/reference/builder/) for your application if you want to build Docker image using **coldbrew-cli**.
 
