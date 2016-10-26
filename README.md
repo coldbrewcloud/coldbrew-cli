@@ -118,3 +118,7 @@ Similar to [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Comma
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-delete.gif?v=1" width="800">
 
+## Documentations
+
+- [Documentations Home](https://github.com/coldbrewcloud/coldbrew-cli/wiki)
+- [FAQ](https://github.com/coldbrewcloud/coldbrew-cli/wiki/FAQ)
