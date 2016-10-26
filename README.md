@@ -34,6 +34,8 @@ This is what a typical deployment workflow might look like:
 
 See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for more details.
 
+### Core Functions
+
 #### Create Cluster
 
 To start deploying your applications, you need to have at least one cluster set up. 
