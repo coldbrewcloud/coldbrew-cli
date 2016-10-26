@@ -259,7 +259,7 @@ func (c *Command) Run() error {
 				return false, nil
 			}
 			return true, err
-		}, time.Second, 1*time.Minute)
+		}, time.Second, 5*time.Minute)
 		if err != nil {
 			return console.ExitWithErrorString("Failed to create EC2 Launch Configuration [%s]: %s", launchConfigName, err.Error())
 		}
