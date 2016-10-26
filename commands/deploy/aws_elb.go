@@ -3,11 +3,14 @@ package deploy
 import (
 	"fmt"
 
+	"time"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecs"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/elb"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -204,7 +207,11 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 	if err != nil {
 		return "", fmt.Errorf("Failed to create EC2 Security Group [%s]: %s", securityGroupName, err.Error())
 	}
-	if err := c.awsClient.EC2().CreateTags(securityGroupID, core.DefaultTagsForAWSResources(securityGroupName)); err != nil {
+
+	err = utils.RetryOnAWSErrorCode(func() error {
+		return c.awsClient.EC2().CreateTags(securityGroupID, core.DefaultTagsForAWSResources(securityGroupName))
+	}, []string{"InvalidGroup.NotFound"}, time.Second, 5*time.Minute)
+	if err != nil {
 		return "", fmt.Errorf("Failed to tag EC2 Security Group [%s]: %s", securityGroupName, err.Error())
 	}
 

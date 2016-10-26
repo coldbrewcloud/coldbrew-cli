@@ -210,15 +210,18 @@ func (c *Command) Run() error {
 			return console.ExitWithErrorString("Failed to create EC2 Security Group [%s] for container instances: %s", instanceSecurityGroupName, err.Error())
 		}
 
+		err = utils.RetryOnAWSErrorCode(func() error {
+			return c.awsClient.EC2().CreateTags(instanceSecurityGroupID, core.DefaultTagsForAWSResources(instanceSecurityGroupName))
+		}, []string{"InvalidGroup.NotFound"}, time.Second, 5*time.Minute)
+		if err != nil {
+			return console.ExitWithErrorString("Failed to tag EC2 Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
+		}
+
 		console.UpdatingResource(fmt.Sprintf("Adding inbound rule [%s:%d:%s] to EC2 Security Group",
 			ec2.SecurityGroupProtocolTCP, 22, "0.0.0.0/0"),
 			instanceSecurityGroupName, false)
 		if err := c.awsClient.EC2().AddInboundToSecurityGroup(instanceSecurityGroupID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
 			return console.ExitWithErrorString("Failed to add SSH inbound rule to Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
-		}
-
-		if err := c.awsClient.EC2().CreateTags(instanceSecurityGroupID, core.DefaultTagsForAWSResources(instanceSecurityGroupName)); err != nil {
-			return console.ExitWithErrorString("Failed to tag EC2 Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
 		}
 	}
 
