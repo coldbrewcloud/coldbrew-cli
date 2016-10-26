@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/coldbrewcloud/coldbrew-cli.svg?branch=master)](https://travis-ci.org/coldbrewcloud/coldbrew-cli)
 
-**coldbrew-cli** automates your Docker container deployments on AWS.
+**coldbrew-cli** automates your Docker container deployment on AWS.
 
 ## Getting Started
 
@@ -10,7 +10,7 @@
 
 - [Download](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Downloads) CLI executable (`coldbrew` or `coldbrew.exe`) and put it in your $PATH.
 - Configure AWS credentials, region, and VPC through [environment variables](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Environment-Variables) or [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags).
-- [Prerequisites] Make sure you have [Dockerfile](https://docs.docker.com/engine/reference/builder/) for your application, and, [docker](https://docs.docker.com/engine/installation/) installed in your system.
+- Make sure you have [docker](https://docs.docker.com/engine/installation/) installed in your system. You will also need [Dockerfile](https://docs.docker.com/engine/reference/builder/) for your application if you want to build Docker image using **coldbrew-cli**.
 
 ### Core Concepts
 
