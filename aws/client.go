@@ -16,6 +16,14 @@ import (
 type Client struct {
 	session *session.Session
 	config  *_aws.Config
+
+	autoScalingClient *autoscaling.Client
+	ec2Client         *ec2.Client
+	ecsClient         *ecs.Client
+	elbClient         *elb.Client
+	ecrClient         *ecr.Client
+	iamClient         *iam.Client
+	snsClient         *sns.Client
 }
 
 func NewClient(region, accessKey, secretKey string) *Client {
@@ -31,29 +39,50 @@ func NewClient(region, accessKey, secretKey string) *Client {
 }
 
 func (c *Client) AutoScaling() *autoscaling.Client {
-	return autoscaling.New(c.session, c.config)
+	if c.autoScalingClient == nil {
+		c.autoScalingClient = autoscaling.New(c.session, c.config)
+	}
+	return c.autoScalingClient
 }
 
 func (c *Client) EC2() *ec2.Client {
-	return ec2.New(c.session, c.config)
+	if c.ec2Client == nil {
+		c.ec2Client = ec2.New(c.session, c.config)
+	}
+	return c.ec2Client
 }
 
 func (c *Client) ECS() *ecs.Client {
-	return ecs.New(c.session, c.config)
+	if c.ecsClient == nil {
+		c.ecsClient = ecs.New(c.session, c.config)
+	}
+	return c.ecsClient
 }
 
 func (c *Client) ELB() *elb.Client {
-	return elb.New(c.session, c.config)
+	if c.elbClient == nil {
+		c.elbClient = elb.New(c.session, c.config)
+	}
+	return c.elbClient
 }
 
 func (c *Client) ECR() *ecr.Client {
-	return ecr.New(c.session, c.config)
+	if c.ecrClient == nil {
+		c.ecrClient = ecr.New(c.session, c.config)
+	}
+	return c.ecrClient
 }
 
 func (c *Client) IAM() *iam.Client {
-	return iam.New(c.session, c.config)
+	if c.iamClient == nil {
+		c.iamClient = iam.New(c.session, c.config)
+	}
+	return c.iamClient
 }
 
 func (c *Client) SNS() *sns.Client {
-	return sns.New(c.session, c.config)
+	if c.snsClient == nil {
+		c.snsClient = sns.New(c.session, c.config)
+	}
+	return c.snsClient
 }
