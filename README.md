@@ -14,33 +14,35 @@
 
 ### Core Concepts
 
-**coldbrew-cli** has 2 simple concepts, applications (apps) and clusters. Long story short, apps are the minimum deployment units, and, clusters are where one or more apps are running together sharing some of AWS resources. Typical setup would be a couple of applications (for your projects) running in a cluster. See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for more details.
+**coldbrew-cli** operates on two simple concepts: applications _(apps)_ and clusters. 
+
+- An **app** is the minimum deployment unit.
+- One or more apps can run in a **cluster**, and, they share the computing resources.
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/concept.png?v=1" width="350">
 
-### Typical Workflow
+This is what a typical deployment workflow might look like:
 
-1. Create new cluster _(See [cluster-create](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-create) command)_
-2. Create app configuration _(See [init](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-init) command)_
+1. Create new cluster _(See: [cluster-create](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-create))_
+2. Create app configuration _(See: [init](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-init))_
 3. Development iteration:
-  - Make code/configuration changes.
-  - Deploy app _(See [deploy](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-deploy) command)_
-  - Check the status _(See [status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-status) and [cluster-status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-status) commands)_ and adjust cluster capacity as needed _(See [cluster-scale](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-scale) command)_
-4. Delete app and its resources _(See [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete) command)_
-5. Delete cluster and its resources _(See [cluster-delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-delete) command)_
+  - Make code/configuration changes
+  - Deploy app to cluster _(See [deploy](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-deploy))_
+  - Check app/cluster status _(See: [status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-status) and [cluster-status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-status))_ and adjust cluster capacity as needed _(See: [cluster-scale](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-scale))_
+4. Delete app and its resources _(See: [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete) )_
+5. Delete cluster and its resources _(See: [cluster-delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-delete))_
 
+See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for more details.
 
-### Create Cluster
+#### Create Cluster
 
 ```bash
-coldbrew cluster-create cluster1
+coldbrew cluster-create {cluster-name}
 ```
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif?v=1" width="800">
 
-### Init App
-
-Here we assume that you already have your `Dockerfile`
+#### Configure App
 
 ```bash
 coldbrew init --default
@@ -48,13 +50,44 @@ coldbrew init --default
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="800">
 
-### Deploy App
+#### Deploy App
 
 ```bash
 coldbrew deploy
 ```
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif?v=1" width="800">
+
+#### Check Status
+
+```bash
+coldbrew status
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-status.gif?v=1" width="800">
+
+```bash
+coldbrew cluster-status
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-status.gif?v=1" width="800">
+
+#### Delete App
+
+```bash
+coldbrew delete
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-delete.gif?v=1" width="800">
+
+
+#### Delete Cluster
+
+```bash
+coldbrew cluster-delete
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-delete.gif?v=1" width="800">
 
 
 
