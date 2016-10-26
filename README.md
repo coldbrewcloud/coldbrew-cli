@@ -46,7 +46,7 @@ See [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Fl
 coldbrew cluster-create cluster1
 ```
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif?v=1" width="700">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif?v=1" width="800">
 
 ### Init App
 
@@ -56,7 +56,7 @@ Here we assume that you already have your `Dockerfile`
 coldbrew init --default
 ```
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="700">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="800">
 
 ### Deploy App
 
@@ -64,7 +64,7 @@ coldbrew init --default
 coldbrew deploy
 ```
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif?v=1" width="700">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif?v=1" width="800">
 
 
 
