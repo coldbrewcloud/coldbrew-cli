@@ -161,69 +161,71 @@ func (c *Command) Run() error {
 		if err != nil {
 			return console.ExitWithErrorString("Failed to list ECS Container Instances: %s", err.Error())
 		}
-		containerInstances, err := c.awsClient.ECS().RetrieveContainerInstances(ecsClusterName, containerInstanceARNs)
-		if err != nil {
-			return console.ExitWithErrorString("Failed to retrieve ECS Container Instances: %s", err.Error())
-		}
-
-		// retrieve EC2 Instance info
-		ec2InstanceIDs := []string{}
-		for _, ci := range containerInstances {
-			ec2InstanceIDs = append(ec2InstanceIDs, conv.S(ci.Ec2InstanceId))
-		}
-		ec2Instances, err := c.awsClient.EC2().RetrieveInstances(ec2InstanceIDs)
-		if err != nil {
-			return console.ExitWithErrorString("Failed to retrieve EC2 Instances: %s", err.Error())
-		}
-
-		for _, ci := range containerInstances {
-			console.Info("ECS Container Instance")
-
-			console.DetailWithResource("ID", aws.GetECSContainerInstanceIDFromARN(conv.S(ci.ContainerInstanceArn)))
-
-			if conv.B(ci.AgentConnected) {
-				console.DetailWithResource("Status", conv.S(ci.Status))
-			} else {
-				console.DetailWithResourceNote("Status", conv.S(ci.Status), "(agent not connected)", true)
+		if containerInstanceARNs != nil || len(containerInstanceARNs) > 0 {
+			containerInstances, err := c.awsClient.ECS().RetrieveContainerInstances(ecsClusterName, containerInstanceARNs)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to retrieve ECS Container Instances: %s", err.Error())
 			}
 
-			console.DetailWithResource("Tasks (running/pending)", fmt.Sprintf("%d/%d",
-				conv.I64(ci.RunningTasksCount),
-				conv.I64(ci.PendingTasksCount)))
+			// retrieve EC2 Instance info
+			ec2InstanceIDs := []string{}
+			for _, ci := range containerInstances {
+				ec2InstanceIDs = append(ec2InstanceIDs, conv.S(ci.Ec2InstanceId))
+			}
+			ec2Instances, err := c.awsClient.EC2().RetrieveInstances(ec2InstanceIDs)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to retrieve EC2 Instances: %s", err.Error())
+			}
 
-			var registeredCPU, registeredMemory, remainingCPU, remainingMemory int64
-			for _, rr := range ci.RegisteredResources {
-				switch strings.ToLower(conv.S(rr.Name)) {
-				case "cpu":
-					registeredCPU = conv.I64(rr.IntegerValue)
-				case "memory":
-					registeredMemory = conv.I64(rr.IntegerValue)
+			for _, ci := range containerInstances {
+				console.Info("ECS Container Instance")
+
+				console.DetailWithResource("ID", aws.GetECSContainerInstanceIDFromARN(conv.S(ci.ContainerInstanceArn)))
+
+				if conv.B(ci.AgentConnected) {
+					console.DetailWithResource("Status", conv.S(ci.Status))
+				} else {
+					console.DetailWithResourceNote("Status", conv.S(ci.Status), "(agent not connected)", true)
 				}
-			}
-			for _, rr := range ci.RemainingResources {
-				switch strings.ToLower(conv.S(rr.Name)) {
-				case "cpu":
-					remainingCPU = conv.I64(rr.IntegerValue)
-				case "memory":
-					remainingMemory = conv.I64(rr.IntegerValue)
+
+				console.DetailWithResource("Tasks (running/pending)", fmt.Sprintf("%d/%d",
+					conv.I64(ci.RunningTasksCount),
+					conv.I64(ci.PendingTasksCount)))
+
+				var registeredCPU, registeredMemory, remainingCPU, remainingMemory int64
+				for _, rr := range ci.RegisteredResources {
+					switch strings.ToLower(conv.S(rr.Name)) {
+					case "cpu":
+						registeredCPU = conv.I64(rr.IntegerValue)
+					case "memory":
+						registeredMemory = conv.I64(rr.IntegerValue)
+					}
 				}
-			}
-
-			console.DetailWithResource("CPU (remaining/registered)", fmt.Sprintf("%.2f/%.2f",
-				float64(remainingCPU)/1024.0, float64(registeredCPU)/1024.0))
-			console.DetailWithResource("Memory (remaining/registered)", fmt.Sprintf("%dM/%dM,",
-				remainingMemory, registeredMemory))
-
-			console.DetailWithResource("EC2 Instance ID", conv.S(ci.Ec2InstanceId))
-			for _, ei := range ec2Instances {
-				if conv.S(ei.InstanceId) == conv.S(ci.Ec2InstanceId) {
-					if !utils.IsBlank(conv.S(ei.PrivateIpAddress)) {
-						console.DetailWithResource("  Private IP", conv.S(ei.PrivateIpAddress))
+				for _, rr := range ci.RemainingResources {
+					switch strings.ToLower(conv.S(rr.Name)) {
+					case "cpu":
+						remainingCPU = conv.I64(rr.IntegerValue)
+					case "memory":
+						remainingMemory = conv.I64(rr.IntegerValue)
 					}
-					if !utils.IsBlank(conv.S(ei.PublicIpAddress)) {
-						console.DetailWithResource("  Public IP", conv.S(ei.PublicIpAddress))
+				}
+
+				console.DetailWithResource("CPU (remaining/registered)", fmt.Sprintf("%.2f/%.2f",
+					float64(remainingCPU)/1024.0, float64(registeredCPU)/1024.0))
+				console.DetailWithResource("Memory (remaining/registered)", fmt.Sprintf("%dM/%dM,",
+					remainingMemory, registeredMemory))
+
+				console.DetailWithResource("EC2 Instance ID", conv.S(ci.Ec2InstanceId))
+				for _, ei := range ec2Instances {
+					if conv.S(ei.InstanceId) == conv.S(ci.Ec2InstanceId) {
+						if !utils.IsBlank(conv.S(ei.PrivateIpAddress)) {
+							console.DetailWithResource("  Private IP", conv.S(ei.PrivateIpAddress))
+						}
+						if !utils.IsBlank(conv.S(ei.PublicIpAddress)) {
+							console.DetailWithResource("  Public IP", conv.S(ei.PublicIpAddress))
+						}
+						break
 					}
-					break
 				}
 			}
 		}
