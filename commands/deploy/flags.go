@@ -59,8 +59,10 @@ func (c *Command) validateFlags(flags *Flags) error {
 		return fmt.Errorf("Invalid Docker image [%s]", conv.S(flags.DockerImage))
 	}
 
-	if err := c.validatePath(conv.S(flags.DockerfilePath)); err != nil {
-		return fmt.Errorf("Invalid Dockerfile path [%s]", conv.S(flags.DockerfilePath))
+	if !utils.IsBlank(conv.S(flags.DockerfilePath)) {
+		if err := c.validatePath(conv.S(flags.DockerfilePath)); err != nil {
+			return fmt.Errorf("Invalid Dockerfile path [%s]", conv.S(flags.DockerfilePath))
+		}
 	}
 
 	if conv.I64(flags.Units) >= 0 && uint16(conv.I64(flags.Units)) > core.MaxAppUnits {
