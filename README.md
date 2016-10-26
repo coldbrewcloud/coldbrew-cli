@@ -36,29 +36,48 @@ See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for 
 
 #### Create Cluster
 
+To start deploying your applications, you need to have at least one cluster set up. 
+
 ```bash
 coldbrew cluster-create {cluster-name}
 ```
+
+[cluster-create](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-create) command will look into your current AWS environment, and, will perform all necessary changes to build the cluster. Note that it can take several minutes until all Docker hosts (EC2 instances) become fully available in your cluster. Use [cluster-status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-status) command to check the status. You can also adjust the cluster's computing capacity using [cluster-scale](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-scale) command.
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif?v=1" width="800">
 
 #### Configure App
 
+The next step is prepare the app [configuration file](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File).
+
 ```bash
 coldbrew init --default
 ```
+
+You can manually create/edit your configuration file, or, you can use [init](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-init) command to generate a proper default configuraiton.
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="800">
 
 #### Deploy App
 
+Once the configuration file is ready, now you can deploy your app in the cluster.
+
 ```bash
 coldbrew deploy
 ```
 
+Basically [deploy](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-deploy) command does:
+- build Docker image using your `Dockerfile` _(but this is completely optional if provide your own local Docker image; see [--docker-image](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-deploy#--docker-image) flag)_
+- push Docker image to a remote repository (ECR)
+- analyze the current AWS environment and setup, and, perform all necessary changes to initiate ECS deployments
+
+Then, within a couple minutes _(mostly less than a minute)_, you will see your new application units up and running.
+
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif?v=1" width="800">
 
 #### Check Status
+
+You can use [status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-status) and [cluster-status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-status) commands to check the running status of your app and cluster respectively.
 
 ```bash
 coldbrew status
@@ -67,29 +86,33 @@ coldbrew status
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-status.gif?v=1" width="800">
 
 ```bash
-coldbrew cluster-status
+coldbrew cluster-status {cluster-name}
 ```
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-status.gif?v=1" width="800">
 
 #### Delete App
 
+When you no longer need your app, you can remove your app from the cluster using [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete) command.
+
 ```bash
 coldbrew delete
 ```
+
+[delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete) command gathers a list of AWS resources that need to be deleted, and, if you confirm, it will start cleaning them up. It can take several minutes for the full process.
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-delete.gif?v=1" width="800">
 
 
 #### Delete Cluster
 
+You can use a cluster for more than one apps, but, when you no longer need the cluster, you use [cluster-delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-delete) command to clean up all the resources.
+
 ```bash
 coldbrew cluster-delete
 ```
 
+Similar to [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete) command, [cluster-delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-delete) will delete all AWS resources that are no longer needed. It can take several minutes for the full process.
+
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-delete.gif?v=1" width="800">
-
-
-
-
 
