@@ -287,6 +287,10 @@ func (c *Client) ListServiceTaskARNs(clusterName, serviceName string) ([]string,
 }
 
 func (c *Client) RetrieveTasks(clusterName string, taskARNs []string) ([]*_ecs.Task, error) {
+	if len(taskARNs) == 0 {
+		return []*_ecs.Task{}, nil
+	}
+
 	params := &_ecs.DescribeTasksInput{
 		Cluster: _aws.String(clusterName),
 		Tasks:   _aws.StringSlice(taskARNs),
@@ -330,6 +334,10 @@ func (c *Client) ListContainerInstanceARNs(clusterName string) ([]string, error)
 }
 
 func (c *Client) RetrieveContainerInstances(clusterName string, containerInstanceARNs []string) ([]*_ecs.ContainerInstance, error) {
+	if len(containerInstanceARNs) == 0 {
+		return []*_ecs.ContainerInstance{}, nil
+	}
+
 	params := &_ecs.DescribeContainerInstancesInput{
 		Cluster:            _aws.String(clusterName),
 		ContainerInstances: _aws.StringSlice(containerInstanceARNs),

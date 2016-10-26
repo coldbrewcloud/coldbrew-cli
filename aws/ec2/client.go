@@ -378,6 +378,10 @@ func (c *Client) RetrieveTags(resourceID string) (map[string]string, error) {
 }
 
 func (c *Client) RetrieveInstances(instanceIDs []string) ([]*_ec2.Instance, error) {
+	if len(instanceIDs) == 0 {
+		return []*_ec2.Instance{}, nil
+	}
+
 	var nextToken *string
 	instances := []*_ec2.Instance{}
 
