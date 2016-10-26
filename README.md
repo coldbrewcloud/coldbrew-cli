@@ -6,7 +6,7 @@
 
 ## Getting Started
 
-### Install
+### Install CLI
 
 **coldbrew-cli** is distributed as a binary package.
 
@@ -22,3 +22,47 @@ Alternatively you can build the executable from the source:
 - `cd coldbrew-cli`
 - `go build -o coldbrew`
 - Now you have `coldbrew` executable.
+
+### Configure CLI
+
+**coldbrew-cli** uses several environment variables to take your AWS keys, region name, and, VPC ID.
+
+- `$AWS_ACCESS_KEY_ID`: AWS Access Key ID _(required)_ 
+- `$AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key _(required)_
+- `$AWS_REGION`: AWS  region name _(default: `"us-west-2"`)_
+- `$AWS_VPC`: AWS VPC ID _(optional if you have [default VPC configured](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/default-vpc.html), required otherwise)_
+
+See [CLI Flags](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags) in case you do not want to use environment variables.
+
+### Core Concepts
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/concept.png" width="350">
+
+**coldbrew-cli** has 2 simple concepts, applications (apps) and clusters. Long story short, apps are the minimum deployment units, and, clusters are where one or more apps are running together sharing some of AWS resources. Typical setup would be a couple of applications (for your projects) running in a cluster. See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for more details.
+
+### Create Cluster
+
+```bash
+coldbrew cluster-create cluster1
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif" width="700">
+
+### Init App
+
+Here we assume that you already have your `Dockerfile`
+
+```bash
+coldbrew init
+```
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init.gif" width="700">
+
+### Deploy App
+
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif" width="700">
+
+
+
+
+
