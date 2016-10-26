@@ -157,7 +157,7 @@ func (c *Command) createELBTargetGroup(targetGroupName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Failed to create ELB Target Group [%s]: %s", targetGroupName, err.Error())
 	}
-	if err := c.awsClient.ELB().CreateTags(conv.S(targetGroup.TargetGroupArn), core.DefaultTagsForAWSResources()); err != nil {
+	if err := c.awsClient.ELB().CreateTags(conv.S(targetGroup.TargetGroupArn), core.DefaultTagsForAWSResources(targetGroupName)); err != nil {
 		return "", fmt.Errorf("Failed to tag ELB Target Group [%s]: %s", targetGroupName, err.Error())
 	}
 
@@ -175,7 +175,7 @@ func (c *Command) createELBLoadBalancer(name, vpcID, securityGroupID string) (st
 	if err != nil {
 		return "", fmt.Errorf("Failed to create ELB Load Balancer [%s]: %s", name, err.Error())
 	}
-	if err := c.awsClient.ELB().CreateTags(conv.S(lb.LoadBalancerArn), core.DefaultTagsForAWSResources()); err != nil {
+	if err := c.awsClient.ELB().CreateTags(conv.S(lb.LoadBalancerArn), core.DefaultTagsForAWSResources(name)); err != nil {
 		return "", fmt.Errorf("Failed to tag ELB Load Balancer [%s]: %s", name, err.Error())
 	}
 
@@ -204,7 +204,7 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 	if err != nil {
 		return "", fmt.Errorf("Failed to create EC2 Security Group [%s]: %s", securityGroupName, err.Error())
 	}
-	if err := c.awsClient.EC2().CreateTags(securityGroupID, core.DefaultTagsForAWSResources()); err != nil {
+	if err := c.awsClient.EC2().CreateTags(securityGroupID, core.DefaultTagsForAWSResources(securityGroupName)); err != nil {
 		return "", fmt.Errorf("Failed to tag EC2 Security Group [%s]: %s", securityGroupName, err.Error())
 	}
 

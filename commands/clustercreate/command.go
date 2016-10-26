@@ -213,7 +213,7 @@ func (c *Command) Run() error {
 		if err := c.awsClient.EC2().AddInboundToSecurityGroup(instanceSecurityGroupID, ec2.SecurityGroupProtocolTCP, 22, 22, "0.0.0.0/0"); err != nil {
 			return console.ExitWithErrorString("Failed to add SSH inbound rule to Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
 		}
-		if err := c.awsClient.EC2().CreateTags(instanceSecurityGroupID, core.DefaultTagsForAWSResources()); err != nil {
+		if err := c.awsClient.EC2().CreateTags(instanceSecurityGroupID, core.DefaultTagsForAWSResources(instanceSecurityGroupName)); err != nil {
 			return console.ExitWithErrorString("Failed to tag EC2 Security Group [%s]: %s", instanceSecurityGroupName, err.Error())
 		}
 	}
@@ -276,7 +276,7 @@ func (c *Command) Run() error {
 			return console.ExitWithErrorString("Failed to create EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
 		}
 
-		if err := c.awsClient.AutoScaling().AddTagsToAutoScalingGroup(autoScalingGroupName, core.DefaultTagsForAWSResources(), true); err != nil {
+		if err := c.awsClient.AutoScaling().AddTagsToAutoScalingGroup(autoScalingGroupName, core.DefaultTagsForAWSResources(autoScalingGroupName), true); err != nil {
 			return console.ExitWithErrorString("Failed to tag EC2 Auto Scaling Group [%s]: %s", autoScalingGroupName, err.Error())
 		}
 	}
