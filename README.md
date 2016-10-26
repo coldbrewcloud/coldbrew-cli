@@ -53,10 +53,10 @@ coldbrew cluster-create cluster1
 Here we assume that you already have your `Dockerfile`
 
 ```bash
-coldbrew init
+coldbrew init --default
 ```
 
-<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init.gif" width="700">
+<img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif" width="700">
 
 ### Deploy App
 
