@@ -121,4 +121,5 @@ Similar to [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Comma
 ## Documentations
 
 - [Documentations Home](https://github.com/coldbrewcloud/coldbrew-cli/wiki)
+- [Managed AWS Resources](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Managed-AWS-Resources)
 - [FAQ](https://github.com/coldbrewcloud/coldbrew-cli/wiki/FAQ)
