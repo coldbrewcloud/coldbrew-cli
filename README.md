@@ -2,7 +2,16 @@
 
 [![Build Status](https://travis-ci.org/coldbrewcloud/coldbrew-cli.svg?branch=master)](https://travis-ci.org/coldbrewcloud/coldbrew-cli)
 
-**coldbrew-cli** automates your Docker container deployment on AWS.
+tl;dr **coldbrew-cli** automates your Docker container deployment on AWS.
+
+### Objectives
+
+**coldbrew-cli** can provide
+
+* faster access to ECS _(jumpstart with little knowledge on AWS specifics)_
+* lower maintenance costs _(most cases you don't even need AWS console or SDK)_
+* lessen mistakes by removing boring repetitions
+* easier integration with CI
 
 ## Getting Started
 
@@ -14,7 +23,7 @@
 
 ### Core Concepts
 
-**coldbrew-cli** operates on two simple concepts: applications _(apps)_ and clusters. 
+**coldbrew-cli** operates on two simple concepts: applications _(apps)_ and clusters.
 
 - An **app** is the minimum deployment unit.
 - One or more apps can run in a **cluster**, and, they share the computing resources.
@@ -38,7 +47,7 @@ See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for 
 
 #### Create Cluster
 
-To start deploying your applications, you need to have at least one cluster set up. 
+To start deploying your applications, you need to have at least one cluster set up.
 
 ```bash
 coldbrew cluster-create {cluster-name}
