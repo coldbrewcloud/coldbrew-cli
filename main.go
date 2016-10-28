@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	appName = "coldbrew"
-	appHelp = "See: " + console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags")
+	appName    = "coldbrew"
+	appHelp    = "See: " + console.ColorFnHelpLink("https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Global-Flags")
+	appVersion = ""
 )
 
 type CLIApp struct {
@@ -33,7 +34,7 @@ type CLIApp struct {
 
 func main() {
 	kingpinApp := kingpin.New(appName, appHelp)
-	kingpinApp.Version(Version)
+	kingpinApp.Version(appVersion)
 	globalFlags := flags.NewGlobalFlags(kingpinApp)
 
 	// register commands
