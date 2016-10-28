@@ -67,8 +67,8 @@ func (c *Config) Defaults(source *Config) {
 
 	// load balancer
 	defB(&c.LoadBalancer.Enabled, source.LoadBalancer.Enabled)
-	defB(&c.LoadBalancer.IsHTTPS, source.LoadBalancer.IsHTTPS)
 	defU16(&c.LoadBalancer.Port, source.LoadBalancer.Port)
+	defU16(&c.LoadBalancer.HTTPSPort, source.LoadBalancer.HTTPSPort)
 	defS(&c.LoadBalancer.HealthCheck.Interval, source.LoadBalancer.HealthCheck.Interval)
 	defS(&c.LoadBalancer.HealthCheck.Path, source.LoadBalancer.HealthCheck.Path)
 	defS(&c.LoadBalancer.HealthCheck.Status, source.LoadBalancer.HealthCheck.Status)
@@ -80,6 +80,7 @@ func (c *Config) Defaults(source *Config) {
 	defS(&c.AWS.ELBLoadBalancerName, source.AWS.ELBLoadBalancerName)
 	defS(&c.AWS.ELBTargetGroupName, source.AWS.ELBTargetGroupName)
 	defS(&c.AWS.ELBSecurityGroupName, source.AWS.ELBSecurityGroupName)
+	defS(&c.AWS.ELBCertificateARN, source.AWS.ELBCertificateARN)
 	defS(&c.AWS.ECRRepositoryName, source.AWS.ECRRepositoryName)
 
 	// docker

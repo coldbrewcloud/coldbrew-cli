@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
@@ -33,20 +32,18 @@ func (c *Config) Validate() error {
 	if !core.SizeExpressionRE.MatchString(conv.S(c.Memory)) {
 		return fmt.Errorf("Invalid app memory [%s] (1)", conv.S(c.Memory))
 	} else {
-		m := core.SizeExpressionRE.FindAllStringSubmatch(conv.S(c.Memory), -1)
-		if len(m) != 1 || len(m[0]) < 2 {
-			return fmt.Errorf("Invalid app memory [%s] (2)", conv.S(c.Memory))
-		}
-		parsed, err := strconv.ParseUint(m[0][1], 10, 64)
+		sizeInBytes, err := core.ParseSizeExpression((conv.S(c.Memory)))
 		if err != nil {
-			return fmt.Errorf("Invalid app memory [%s] (3)", conv.S(c.Memory))
+			return fmt.Errorf("Invalid app memory: %s", err.Error())
 		}
-		if parsed == 0 {
-			return errors.New("App memory cannot be 0")
+		if sizeInBytes > core.MaxAppMemoryInMB*1000*1000 {
+			return fmt.Errorf("App memory cannot exceed %dM", core.MaxAppMemoryInMB)
 		}
-		if parsed > core.MaxAppMemory {
-			return fmt.Errorf("App memory cannot exceed %d", core.MaxAppMemory)
-		}
+	}
+
+	if conv.U16(c.LoadBalancer.HTTPSPort) == 0 &&
+		conv.U16(c.LoadBalancer.Port) == 0 {
+		return errors.New("Load balancer ort number is required.")
 	}
 
 	if !core.TimeExpressionRE.MatchString(conv.S(c.LoadBalancer.HealthCheck.Interval)) {
@@ -83,6 +80,10 @@ func (c *Config) Validate() error {
 
 	if !core.ELBTargetGroupNameRE.MatchString(conv.S(c.AWS.ELBTargetGroupName)) {
 		return fmt.Errorf("Invalid ELB Target Group name [%s]", conv.S(c.AWS.ELBTargetGroupName))
+	}
+
+	if conv.U16(c.LoadBalancer.HTTPSPort) > 0 && utils.IsBlank(conv.S(c.AWS.ELBCertificateARN)) {
+		return errors.New("Certificate ARN required to enable HTTPS.")
 	}
 
 	if !core.ELBSecurityGroupNameRE.MatchString(conv.S(c.AWS.ELBSecurityGroupName)) {

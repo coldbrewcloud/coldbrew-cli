@@ -8,17 +8,17 @@ import (
 )
 
 const (
-	MaxAppUnits  = uint16(1000)
-	MaxAppCPU    = float64(1024 * 16)
-	MaxAppMemory = uint64(1024 * 16)
+	MaxAppUnits      = uint16(1000)
+	MaxAppCPU        = float64(1024 * 16)
+	MaxAppMemoryInMB = uint64(1024 * 16)
 )
 
 var (
 	AppNameRE              = regexp.MustCompile(`^[\w\-]{1,32}$`)
 	ClusterNameRE          = regexp.MustCompile(`^[\w\-]{1,32}$`)
-	ELBNameRE              = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]{0,30}(?:[a-zA-Z0-9])?$`)
-	ELBTargetGroupNameRE   = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]{0,30}(?:[a-zA-Z0-9])?$`)
-	ELBSecurityGroupNameRE = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]{0,30}(?:[a-zA-Z0-9])?$`)
+	ELBNameRE              = regexp.MustCompile(`^(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,30})?[a-zA-Z0-9]$`)
+	ELBTargetGroupNameRE   = regexp.MustCompile(`^(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,30})?[a-zA-Z0-9]$`)
+	ELBSecurityGroupNameRE = regexp.MustCompile(`^(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,30})?[a-zA-Z0-9]$`)
 	ECRRepoNameRE          = regexp.MustCompile(`^.{1,256}$`)                       // TODO: need better matcher
 	HealthCheckPathRE      = regexp.MustCompile(`^.+$`)                             // TODO: need better matcher
 	HealthCheckStatusRE    = regexp.MustCompile(`^\d{3}-\d{3}$|^\d{3}(?:,\d{3})*$`) // "200", "200-299", "200,204,201"
