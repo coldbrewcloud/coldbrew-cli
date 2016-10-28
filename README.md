@@ -4,18 +4,14 @@
 
 tl;dr **coldbrew-cli** automates your Docker container deployment on AWS.
 
-## Objective
+### Objectives
 
-This is basically an automation tool. For many people, it can provide:
+**coldbrew-cli** can provide
 
-* faster access to ECS (jumpstart with little knowledge on AWS specifics)
-* lower maintenance costs (most cases you don't even need AWS console or SDK)
+* faster access to ECS _(jumpstart with little knowledge on AWS specifics)_
+* lower maintenance costs _(most cases you don't even need AWS console or SDK)_
 * lessen mistakes by removing boring repetitions
-* make it easier to integrate with CI (single binary executable and config file is all you need; also easier standardization)
-
-I've been using ECS in many production projects for years. After trying several different approaches, use cases, and requirements, I saw some patterns that could be automated and that's why I built this tool.
-
-This is still an early version, but, I've used this tool for several backend services with no issues.
+* easier integration with CI
 
 ## Getting Started
 
