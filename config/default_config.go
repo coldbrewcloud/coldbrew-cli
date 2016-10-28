@@ -20,7 +20,6 @@ func DefaultConfig(appName string) *Config {
 
 	// load balancer
 	conf.LoadBalancer.Enabled = conv.BP(false)
-	conf.LoadBalancer.IsHTTPS = conv.BP(false)
 	conf.LoadBalancer.Port = conv.U16P(80)
 
 	// health check

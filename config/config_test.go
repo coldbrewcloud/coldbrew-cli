@@ -18,8 +18,8 @@ env:
 
 load_balancer:
   enabled: true
-  https: no
   port: 80
+  https_port: 443
 
   health_check:
     interval: 30s
@@ -33,6 +33,7 @@ aws:
   elb_name: echo-lb
   elb_target_group_name: echo-target
   elb_security_group_name: echo-lb-sg
+  elb_certificate_arn: arn:aws:acm:us-west-2:aws-account-id:certificate/certificiate-identifier
   ecr_repo_name: echo-repo
 
 docker:
@@ -53,8 +54,8 @@ const refConfigJSON = `
 	},
 	"load_balancer": {
 		"enabled": true,
-		"https": false,
 		"port": 80,
+		"https_port": 443,
 		"health_check": {
 			"interval": "30s",
 			"path": "/ping",
@@ -68,6 +69,7 @@ const refConfigJSON = `
 		"elb_name": "echo-lb",
 		"elb_target_group_name": "echo-target",
 		"elb_security_group_name": "echo-lb-sg",
+		"elb_certificate_arn": "arn:aws:acm:us-west-2:aws-account-id:certificate/certificiate-identifier",
 		"ecr_repo_name": "echo-repo"
 	},
 	"docker": {
@@ -87,9 +89,9 @@ var refConfig = &Config{
 		"key2": "value2",
 	},
 	LoadBalancer: ConfigLoadBalancer{
-		Enabled: conv.BP(true),
-		IsHTTPS: conv.BP(false),
-		Port:    conv.U16P(80),
+		Enabled:   conv.BP(true),
+		Port:      conv.U16P(80),
+		HTTPSPort: conv.U16P(443),
 		HealthCheck: ConfigLoadBalancerHealthCheck{
 			Interval:       conv.SP("30s"),
 			Path:           conv.SP("/ping"),
@@ -103,6 +105,7 @@ var refConfig = &Config{
 		ELBLoadBalancerName:  conv.SP("echo-lb"),
 		ELBTargetGroupName:   conv.SP("echo-target"),
 		ELBSecurityGroupName: conv.SP("echo-lb-sg"),
+		ELBCertificateARN:    conv.SP("arn:aws:acm:us-west-2:aws-account-id:certificate/certificiate-identifier"),
 		ECRRepositoryName:    conv.SP("echo-repo"),
 	},
 	Docker: ConfigDocker{

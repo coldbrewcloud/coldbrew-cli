@@ -197,7 +197,7 @@ func (c *Client) DeleteTargetGroup(targetGroupARN string) error {
 	return err
 }
 
-func (c *Client) CreateListener(loadBalancerARN, targetGroupARN string, port uint16, protocol string) error {
+func (c *Client) CreateListener(loadBalancerARN, targetGroupARN string, port uint16, protocol, certificateARN string) error {
 	params := &_elb.CreateListenerInput{
 		DefaultActions: []*_elb.Action{
 			{
@@ -208,6 +208,9 @@ func (c *Client) CreateListener(loadBalancerARN, targetGroupARN string, port uin
 		LoadBalancerArn: _aws.String(loadBalancerARN),
 		Port:            _aws.Int64(int64(port)),
 		Protocol:        _aws.String(protocol),
+	}
+	if certificateARN != "" {
+		params.Certificates = []*_elb.Certificate{{CertificateArn: _aws.String(certificateARN)}}
 	}
 
 	_, err := c.svc.CreateListener(params)

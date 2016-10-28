@@ -21,12 +21,10 @@ func TestLoad(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, conf)
 	assert.Equal(t, "app1", conv.S(conf.Name))
-	assert.False(t, conv.B(conf.LoadBalancer.IsHTTPS))
 	conf, err = Load([]byte("{}"), flags.GlobalFlagsConfigFileFormatJSON, "app1")
 	assert.Nil(t, err)
 	assert.NotNil(t, conf)
 	assert.Equal(t, "app1", conv.S(conf.Name))
-	assert.False(t, conv.B(conf.LoadBalancer.IsHTTPS))
 
 	// empty data and empty app name
 	conf, err = Load([]byte(""), flags.GlobalFlagsConfigFileFormatYAML, "")

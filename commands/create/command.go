@@ -91,16 +91,24 @@ func (c *Command) Run() error {
 	if conv.B(c.commandFlags.Default) || console.AskConfirm("Does your application need load balancing?", true) {
 		conf.LoadBalancer.Enabled = conv.BP(true)
 
-		// https
-		conf.LoadBalancer.IsHTTPS = defConf.LoadBalancer.IsHTTPS
-
 		// port
-		input := c.askQuestion("Load balancer port number", "Load Balancer Port", fmt.Sprintf("%d", conv.U16(defConf.Port)))
+		input := c.askQuestion("Load balancer port number (HTTP)", "Load Balancer Port (HTTP)", fmt.Sprintf("%d", conv.U16(defConf.LoadBalancer.Port)))
 		parsed, err := strconv.ParseUint(input, 10, 16)
 		if err != nil || parsed == 0 {
 			return console.ExitWithErrorString("Invalid port number [%s]", input)
 		}
 		conf.LoadBalancer.Port = conv.U16P(uint16(parsed))
+
+		// https
+		if !conv.B(c.commandFlags.Default) {
+			// https port
+			input := c.askQuestion("Enter HTTPS port number if you want to enable HTTPS traffic.", "Load Balancer HTTPS Port", "0")
+			parsed, err := strconv.ParseUint(input, 10, 16)
+			if err != nil || parsed == 0 {
+				return console.ExitWithErrorString("Invalid port number [%s]", input)
+			}
+			conf.LoadBalancer.HTTPSPort = conv.U16P(uint16(parsed))
+		}
 
 		// health check
 		conf.LoadBalancer.HealthCheck.Path = conv.SP(c.askQuestion("Health check destination path", "Health Check Path", conv.S(defConf.LoadBalancer.HealthCheck.Path)))
@@ -134,8 +142,13 @@ func (c *Command) Run() error {
 			core.DefaultELBTargetGroupName(conv.S(conf.Name))))
 
 		// elb security group
-		conf.AWS.ELBSecurityGroupName = conv.SP(c.askQuestion("Security group ID/name for ELB load balancer. Leave it blank to create default one.", "ELB Security Group",
+		conf.AWS.ELBSecurityGroupName = conv.SP(c.askQuestion("Security group ID/name for ELB Load Balancer. Leave it blank to create default one.", "ELB Security Group",
 			core.DefaultELBLoadBalancerSecurityGroupName(conv.S(conf.Name))))
+
+		// elb certificate ARN
+		if conv.U16(conf.LoadBalancer.HTTPSPort) > 0 {
+			conf.AWS.ELBCertificateARN = conv.SP(c.askQuestion("HTTPS Certificate ARN for ELB Load Balancer", "ELB Certificate ARN", ""))
+		}
 
 		// ecr repo name
 		conf.AWS.ECRRepositoryName = conv.SP(c.askQuestion("ECR repository name", "ECR Namespace",

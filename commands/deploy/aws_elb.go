@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"fmt"
-
 	"time"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
@@ -74,14 +73,28 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 				return nil, err
 			}
 
-			// create a new listen between ELB Load Balancer and ELB Target Group
-			console.AddingResource("Adding a listenr for ELB Load Balancer", elbLoadBalancerName, false)
-			err = c.awsClient.ELB().CreateListener(
-				conv.S(elbLoadBalancer.LoadBalancerArn),
-				elbTargetGroupARN,
-				elbPort, "HTTP")
-			if err != nil {
-				return nil, fmt.Errorf("Failed to create ELB Listener: %s", err.Error())
+			// create HTTP listener
+			if elbPort > 0 {
+				console.AddingResource("Adding listener (HTTP) for ELB Load Balancer", elbLoadBalancerName, false)
+				err = c.awsClient.ELB().CreateListener(
+					conv.S(elbLoadBalancer.LoadBalancerArn),
+					elbTargetGroupARN,
+					elbPort, "HTTP", "")
+				if err != nil {
+					return nil, fmt.Errorf("Failed to create ELB Listener: %s", err.Error())
+				}
+			}
+
+			// create HTTPS listener
+			httpsPort := conv.U16(c.conf.LoadBalancer.HTTPSPort)
+			if httpsPort > 0 {
+				certificateARN := conv.S(c.conf.AWS.ELBCertificateARN)
+
+				console.AddingResource("Adding listener (HTTPS) for ELB Load Balancer", elbLoadBalancerName, false)
+				err = c.awsClient.ELB().CreateListener(conv.S(elbLoadBalancer.LoadBalancerArn), elbTargetGroupARN, httpsPort, "HTTPS", certificateARN)
+				if err != nil {
+					return nil, fmt.Errorf("Failed to create ELB Listener (HTTPS): %s", err.Error())
+				}
 			}
 
 			return &ecs.LoadBalancer{
@@ -116,10 +129,25 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 			return nil, err
 		}
 
-		// create listen between load balancer and target group
-		err = c.awsClient.ELB().CreateListener(elbLoadBalancerARN, elbTargetGroupARN, elbPort, "HTTP")
-		if err != nil {
-			return nil, fmt.Errorf("Failed to create ELB Listener: %s", err.Error())
+		// create HTTP listener
+		if elbPort > 0 {
+			console.AddingResource("Adding listener (HTTP) for ELB Load Balancer", elbLoadBalancerName, false)
+			err = c.awsClient.ELB().CreateListener(elbLoadBalancerARN, elbTargetGroupARN, elbPort, "HTTP", "")
+			if err != nil {
+				return nil, fmt.Errorf("Failed to create ELB Listener: %s", err.Error())
+			}
+		}
+
+		// create HTTPS listener
+		httpsPort := conv.U16(c.conf.LoadBalancer.HTTPSPort)
+		if httpsPort > 0 {
+			certificateARN := conv.S(c.conf.AWS.ELBCertificateARN)
+
+			console.AddingResource("Adding listener (HTTPS) for ELB Load Balancer", elbLoadBalancerName, false)
+			err = c.awsClient.ELB().CreateListener(elbLoadBalancerARN, elbTargetGroupARN, httpsPort, "HTTPS", certificateARN)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to create ELB Listener (HTTPS): %s", err.Error())
+			}
 		}
 
 		return &ecs.LoadBalancer{
@@ -187,7 +215,8 @@ func (c *Command) createELBLoadBalancer(name, vpcID, securityGroupID string) (st
 
 func (c *Command) prepareLoadBalancerSecurityGroup(vpcID string) (string, error) {
 	elbSecurityGroupName := conv.S(c.conf.AWS.ELBSecurityGroupName)
-	elbPort := conv.U16(c.conf.LoadBalancer.Port)
+	httpPort := conv.U16(c.conf.LoadBalancer.Port)
+	httpsPort := conv.U16(c.conf.LoadBalancer.HTTPSPort)
 
 	securityGroup, err := c.awsClient.EC2().RetrieveSecurityGroupByNameOrID(elbSecurityGroupName)
 	if err != nil {
@@ -195,13 +224,13 @@ func (c *Command) prepareLoadBalancerSecurityGroup(vpcID string) (string, error)
 	}
 	if securityGroup == nil {
 		// create a new one if specified security group does not exists
-		return c.createLoadBalancerSecurityGroup(vpcID, elbPort, elbSecurityGroupName)
+		return c.createLoadBalancerSecurityGroup(vpcID, httpPort, httpsPort, elbSecurityGroupName)
 	}
 
 	return conv.S(securityGroup.GroupId), nil
 }
 
-func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, securityGroupName string) (string, error) {
+func (c *Command) createLoadBalancerSecurityGroup(vpcID string, httpPort, httpsPort uint16, securityGroupName string) (string, error) {
 	console.AddingResource("Creating EC2 Security Group", securityGroupName, false)
 	securityGroupID, err := c.awsClient.EC2().CreateSecurityGroup(securityGroupName, securityGroupName, vpcID)
 	if err != nil {
@@ -215,16 +244,32 @@ func (c *Command) createLoadBalancerSecurityGroup(vpcID string, elbPort uint16, 
 		return "", fmt.Errorf("Failed to tag EC2 Security Group [%s]: %s", securityGroupName, err.Error())
 	}
 
-	// add load balancer inbound rule
-	console.UpdatingResource(fmt.Sprintf("Adding inbound rule [%s:%d:%s] to EC2 Security Group",
-		ec2.SecurityGroupProtocolTCP, elbPort, "0.0.0.0/0"),
-		securityGroupName, false)
-	err = c.awsClient.EC2().AddInboundToSecurityGroup(
-		securityGroupID,
-		ec2.SecurityGroupProtocolTCP,
-		elbPort, elbPort, "0.0.0.0/0")
-	if err != nil {
-		return "", fmt.Errorf("Failed to add inbound rule to EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+	// add load balancer inbound rule (HTTP)
+	if httpPort > 0 {
+		console.UpdatingResource(fmt.Sprintf("Adding inbound rule [%s:%d:%s] to EC2 Security Group",
+			ec2.SecurityGroupProtocolTCP, httpPort, "0.0.0.0/0"),
+			securityGroupName, false)
+		err = c.awsClient.EC2().AddInboundToSecurityGroup(
+			securityGroupID,
+			ec2.SecurityGroupProtocolTCP,
+			httpPort, httpPort, "0.0.0.0/0")
+		if err != nil {
+			return "", fmt.Errorf("Failed to add inbound rule to EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+		}
+	}
+
+	// add load balancer inbound rule (HTTPS)
+	if httpsPort > 0 {
+		console.UpdatingResource(fmt.Sprintf("Adding inbound rule [%s:%d:%s] to EC2 Security Group",
+			ec2.SecurityGroupProtocolTCP, httpsPort, "0.0.0.0/0"),
+			securityGroupName, false)
+		err = c.awsClient.EC2().AddInboundToSecurityGroup(
+			securityGroupID,
+			ec2.SecurityGroupProtocolTCP,
+			httpsPort, httpsPort, "0.0.0.0/0")
+		if err != nil {
+			return "", fmt.Errorf("Failed to add inbound rule to EC2 Security Group [%s]: %s", securityGroupName, err.Error())
+		}
 	}
 
 	// add inbound rule to ECS instance security group

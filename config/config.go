@@ -15,8 +15,8 @@ type Config struct {
 
 type ConfigLoadBalancer struct {
 	Enabled     *bool                         `json:"enabled" yaml:"enabled"`
-	IsHTTPS     *bool                         `json:"https,omitempty" yaml:"https,omitempty"`
 	Port        *uint16                       `json:"port,omitempty" yaml:"port,omitempty"`
+	HTTPSPort   *uint16                       `json:"https_port,omitempty" yaml:"https_port,omitempty"`
 	HealthCheck ConfigLoadBalancerHealthCheck `json:"health_check,omitempty" yaml:"health_check,omitempty"`
 }
 
@@ -33,6 +33,7 @@ type ConfigAWS struct {
 	ELBLoadBalancerName  *string `json:"elb_name,omitempty" yaml:"elb_name,omitempty"`
 	ELBTargetGroupName   *string `json:"elb_target_group_name,omitempty" yaml:"elb_target_group_name,omitempty"`
 	ELBSecurityGroupName *string `json:"elb_security_group_name,omitempty" yaml:"elb_security_group_name,omitempty"`
+	ELBCertificateARN    *string `json:"elb_certificate_arn,omitempty" yaml:"elb_certificate_arn,omitempty"`
 	ECRRepositoryName    *string `json:"ecr_repo_name,omitempty" yaml:"ecr_repo_name,omitempty"`
 }
 
