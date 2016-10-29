@@ -408,3 +408,22 @@ func (c *Client) RetrieveInstances(instanceIDs []string) ([]*_ec2.Instance, erro
 
 	return instances, nil
 }
+
+func (c *Client) FindImage(ownerID, tagName string) ([]*_ec2.Image, error) {
+	params := &_ec2.DescribeImagesInput{
+		Owners: _aws.StringSlice([]string{ownerID}),
+		Filters: []*_ec2.Filter{
+			{
+				Name:   _aws.String("tag-key"),
+				Values: _aws.StringSlice([]string{tagName}),
+			},
+		},
+	}
+
+	res, err := c.svc.DescribeImages(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Images, nil
+}

@@ -3,12 +3,32 @@ package clustercreate
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
+	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
+
+const (
+	defaultECSContainerInstanceImageIDBaseURL = "https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/coldbrew-cli/ecs-ci-ami/default/"
+	defaultECSContainerInstanceImageOwnerID   = "865092420289"
+)
+
+var defaultECSContainerInstanceAmazonImageID = map[string]string{
+	aws.AWSRegionUSEast1:      "ami-1924770e",
+	aws.AWSRegionUSEast2:      "ami-bd3e64d8",
+	aws.AWSRegionUSWest1:      "ami-7f004b1f",
+	aws.AWSRegionUSWest2:      "ami-56ed4936",
+	aws.AWSRegionEUWest1:      "ami-c8337dbb",
+	aws.AWSRegionEUCentral1:   "ami-dd12ebb2",
+	aws.AWSRegionAPNorthEast1: "ami-c8b016a9",
+	aws.AWSRegionAPSouthEast1: "ami-6d22840e",
+	aws.AWSRegionAPSouthEast2: "ami-73407d10",
+}
 
 func (c *Command) getAWSInfo() (string, string, []string, error) {
 	regionName, vpcID, err := c.globalFlags.GetAWSRegionAndVPCID()
@@ -28,30 +48,45 @@ func (c *Command) getAWSInfo() (string, string, []string, error) {
 	return regionName, vpcID, subnetIDs, nil
 }
 
-func (c *Command) getClusterImageID(region string) string {
-	switch region {
-	case aws.AWSRegionUSEast1:
-		return "ami-40286957"
-	case aws.AWSRegionUSWest1:
-		return "ami-20fab440"
-	case aws.AWSRegionUSWest2:
-		return "ami-562cf236"
-	case aws.AWSRegionEUWest1:
-		return "ami-175f1964"
-	case aws.AWSRegionEUCentral1:
-		return "ami-c55ea2aa"
-	case aws.AWSRegionAPNorthEast1:
-		return "ami-010ed160"
-	case aws.AWSRegionAPSouthEast1:
-		return "ami-438b2f20"
-	case aws.AWSRegionAPSouthEast2:
-		return "ami-862211e5"
-	default:
-		return ""
+func (c *Command) retrieveDefaultECSContainerInstancesImageID(region string) string {
+	defaultImages, err := c.awsClient.EC2().FindImage(defaultECSContainerInstanceImageOwnerID, core.AWSTagNameCreatedTimestamp)
+	if err == nil {
+		var latestImage *ec2.Image
+		var latestImageCreationTime string
+
+		for _, image := range defaultImages {
+			if conv.S(image.OwnerId) == defaultECSContainerInstanceImageOwnerID {
+				if latestImage == nil {
+					latestImageCreationTime = getCreationTimeFromTags(image.Tags)
+					if latestImageCreationTime != "" {
+						latestImage = image
+					}
+				} else {
+					creationTime := getCreationTimeFromTags(image.Tags)
+					if creationTime != "" {
+						if strings.Compare(latestImageCreationTime, creationTime) < 0 {
+							latestImage = image
+							latestImageCreationTime = creationTime
+						}
+					}
+				}
+			}
+		}
+
+		if latestImage != nil {
+			return conv.S(latestImage.ImageId)
+		}
 	}
+
+	// if failed to find coldbrew-cli default image, use Amazon ECS optimized image as fallback
+	console.Error("Failed to retrieve default image ID for ECS Container Instances. Amazon ECS Optimized AMI will be used instead.")
+	if imageID, ok := defaultECSContainerInstanceAmazonImageID[region]; ok {
+		return imageID
+	}
+	return ""
 }
 
-func (c *Command) getInstanceUserData(ecsClusterName string) string {
+func (c *Command) getDefaultInstanceUserData(ecsClusterName string) string {
 	userData := fmt.Sprintf(`#!/bin/bash
 echo ECS_CLUSTER=%s >> /etc/ecs/ecs.config`, ecsClusterName)
 	return base64.StdEncoding.EncodeToString([]byte(userData))
@@ -106,4 +141,14 @@ func (c *Command) waitAutoScalingGroupDeletion(autoScalingGroupName string) erro
 		time.Sleep(1 * time.Second)
 	}
 	return nil
+}
+
+func getCreationTimeFromTags(tags []*ec2.Tag) string {
+	for _, tag := range tags {
+		if conv.S(tag.Key) == core.AWSTagNameCreatedTimestamp {
+			return conv.S(tag.Value)
+			break
+		}
+	}
+	return ""
 }
