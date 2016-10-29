@@ -30,6 +30,7 @@ func (c *Client) CreateLaunchConfiguration(launchConfigurationName, instanceType
 		LaunchConfigurationName: _aws.String(launchConfigurationName),
 		SecurityGroups:          _aws.StringSlice(securityGroupIDs),
 		UserData:                _aws.String(userData),
+		InstanceMonitoring:      &_autoscaling.InstanceMonitoring{Enabled: _aws.Bool(false)},
 	}
 
 	if !utils.IsBlank(keyPairName) {

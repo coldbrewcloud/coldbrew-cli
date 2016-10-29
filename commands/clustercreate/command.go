@@ -245,7 +245,7 @@ func (c *Command) Run() error {
 		}
 
 		// container instance image ID
-		imageID := c.getClusterImageID(conv.S(c.globalFlags.AWSRegion))
+		imageID := c.retrieveDefaultECSContainerInstancesImageID(conv.S(c.globalFlags.AWSRegion))
 		if imageID == "" {
 			return console.ExitWithErrorString("No defatul instance image found")
 		}

@@ -2,6 +2,7 @@ package aws
 
 const (
 	AWSRegionUSEast1      = "us-east-1"
+	AWSRegionUSEast2      = "us-east-2"
 	AWSRegionUSWest1      = "us-west-1"
 	AWSRegionUSWest2      = "us-west-2"
 	AWSRegionEUWest1      = "eu-west-1"
