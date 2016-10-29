@@ -3,9 +3,8 @@ package clustercreate
 import (
 	"encoding/base64"
 	"fmt"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/aws"

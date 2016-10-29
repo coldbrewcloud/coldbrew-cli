@@ -1,12 +1,11 @@
 package clustercreate
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
-
-	"encoding/base64"
-	"io/ioutil"
 
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
