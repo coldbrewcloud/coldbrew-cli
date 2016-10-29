@@ -5,6 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"encoding/base64"
+	"io/ioutil"
+
 	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ec2"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
@@ -245,12 +248,26 @@ func (c *Command) Run() error {
 		}
 
 		// container instance image ID
-		imageID := c.retrieveDefaultECSContainerInstancesImageID(conv.S(c.globalFlags.AWSRegion))
-		if imageID == "" {
-			return console.ExitWithErrorString("No defatul instance image found")
+		imageID := conv.S(c.commandFlags.InstanceImageID)
+		if utils.IsBlank(imageID) {
+			// if not provided, use coldbrew-cli default images
+			imageID = c.retrieveDefaultECSContainerInstancesImageID(conv.S(c.globalFlags.AWSRegion))
+			if imageID == "" {
+				return console.ExitWithErrorString("No default instance image found")
+			}
 		}
 
-		instanceUserData := c.getInstanceUserData(ecsClusterName)
+		// container instance userdata
+		instanceUserData := c.getDefaultInstanceUserData(ecsClusterName)
+		instanceUserDataFile := conv.S(c.commandFlags.InstanceUserDataFile)
+		if !utils.IsBlank(instanceUserDataFile) {
+			// if user provided custom user data file, use it instead
+			fileData, err := ioutil.ReadFile(instanceUserDataFile)
+			if err != nil {
+				return console.ExitWithErrorString("Failed to read userdata file [%s]: %s", instanceUserDataFile, err.Error())
+			}
+			instanceUserData = base64.StdEncoding.EncodeToString(fileData)
+		}
 
 		// NOTE: sometimes resources created (e.g. InstanceProfile) do not become available immediately.
 		err = utils.Retry(func() (bool, error) {

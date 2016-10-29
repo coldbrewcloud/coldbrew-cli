@@ -87,7 +87,7 @@ func (c *Command) retrieveDefaultECSContainerInstancesImageID(region string) str
 	return ""
 }
 
-func (c *Command) getInstanceUserData(ecsClusterName string) string {
+func (c *Command) getDefaultInstanceUserData(ecsClusterName string) string {
 	userData := fmt.Sprintf(`#!/bin/bash
 echo ECS_CLUSTER=%s >> /etc/ecs/ecs.config`, ecsClusterName)
 	return base64.StdEncoding.EncodeToString([]byte(userData))
