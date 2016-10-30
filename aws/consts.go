@@ -11,4 +11,12 @@ const (
 	AWSRegionAPSouthEast1 = "ap-southeast-1"
 	AWSRegionAPSouthEast2 = "ap-southeast-2"
 	AWSRegionSAEast1      = "sa-east-1"
+
+	ECSTaskDefinitionLogDriverJSONFile = "json-file"
+	ECSTaskDefinitionLogDriverAWSLogs  = "awslogs"
+	ECSTaskDefinitionLogDriverSyslog   = "syslog"
+	ECSTaskDefinitionLogDriverJournald = "journald"
+	ECSTaskDefinitionLogDriverGelf     = "gelf"
+	ECSTaskDefinitionLogDriverFluentd  = "fluentd"
+	ECSTaskDefinitionLogDriverSplunk   = "splunk"
 )

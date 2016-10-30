@@ -19,16 +19,24 @@ func DefaultConfig(appName string) *Config {
 	conf.Env = make(map[string]string)
 
 	// load balancer
-	conf.LoadBalancer.Enabled = conv.BP(false)
-	conf.LoadBalancer.Port = conv.U16P(80)
+	{
+		conf.LoadBalancer.Enabled = conv.BP(false)
+		conf.LoadBalancer.Port = conv.U16P(80)
 
-	// health check
-	conf.LoadBalancer.HealthCheck.Path = conv.SP("/")
-	conf.LoadBalancer.HealthCheck.Status = conv.SP("200-299")
-	conf.LoadBalancer.HealthCheck.Interval = conv.SP("15s")
-	conf.LoadBalancer.HealthCheck.Timeout = conv.SP("10s")
-	conf.LoadBalancer.HealthCheck.HealthyLimit = conv.U16P(3)
-	conf.LoadBalancer.HealthCheck.UnhealthyLimit = conv.U16P(3)
+		// health check
+		conf.LoadBalancer.HealthCheck.Path = conv.SP("/")
+		conf.LoadBalancer.HealthCheck.Status = conv.SP("200-299")
+		conf.LoadBalancer.HealthCheck.Interval = conv.SP("15s")
+		conf.LoadBalancer.HealthCheck.Timeout = conv.SP("10s")
+		conf.LoadBalancer.HealthCheck.HealthyLimit = conv.U16P(3)
+		conf.LoadBalancer.HealthCheck.UnhealthyLimit = conv.U16P(3)
+	}
+
+	// logging
+	{
+		conf.Logging.Driver = nil
+		conf.Logging.Options = make(map[string]string)
+	}
 
 	// AWS
 	{

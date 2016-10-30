@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecs"
 	"github.com/coldbrewcloud/coldbrew-cli/console"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
+	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 )
 
@@ -31,7 +33,30 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 		return "", err
 	}
 	memory /= 1000 * 1000
-	useCloudWatchLogs := false
+
+	// logging
+	loggingDriver := conv.S(c.conf.Logging.Driver)
+	if c.conf.Logging.Options == nil {
+		c.conf.Logging.Options = make(map[string]string)
+	}
+	switch loggingDriver {
+	case aws.ECSTaskDefinitionLogDriverAWSLogs:
+		// test if group needs to be created
+		awsLogsGroupName, ok := c.conf.Logging.Options["awslogs-group"]
+		if !ok || utils.IsBlank(awsLogsGroupName) {
+			awsLogsGroupName = core.DefaultCloudWatchLogsGroupName(conv.S(c.conf.Name), conv.S(c.conf.ClusterName))
+			c.conf.Logging.Options["awslogs-group"] = awsLogsGroupName
+		}
+		if err := c.PrepareCloudWatchLogsGroup(awsLogsGroupName); err != nil {
+			return "", err
+		}
+
+		// assign region if not provided
+		awsLogsRegionName, ok := c.conf.Logging.Options["awslogs-region"]
+		if !ok || utils.IsBlank(awsLogsRegionName) {
+			c.conf.Logging.Options["awslogs-region"] = conv.S(c.globalFlags.AWSRegion)
+		}
+	}
 
 	console.UpdatingResource("Updating ECS Task Definition", ecsTaskDefinitionName, false)
 	ecsTaskDef, err := c.awsClient.ECS().UpdateTaskDefinition(
@@ -42,7 +67,7 @@ func (c *Command) updateECSTaskDefinition(dockerImageFullURI string) (string, er
 		memory,
 		c.conf.Env,
 		portMappings,
-		useCloudWatchLogs)
+		loggingDriver, c.conf.Logging.Options)
 	if err != nil {
 		return "", fmt.Errorf("Failed to update ECS Task Definition [%s]: %s", ecsTaskDefinitionName, err.Error())
 	}
@@ -132,6 +157,28 @@ func (c *Command) updateECSService(ecsClusterName, ecsServiceName, ecsTaskDefini
 	_, err := c.awsClient.ECS().UpdateService(ecsClusterName, ecsServiceName, ecsTaskDefinitionARN, conv.U16(c.conf.Units))
 	if err != nil {
 		return fmt.Errorf("Failed to update ECS Service [%s]: %s", ecsServiceName, err.Error())
+	}
+
+	return nil
+}
+
+func (c *Command) PrepareCloudWatchLogsGroup(groupName string) error {
+	groups, err := c.awsClient.CloudWatchLogs().ListGroups(groupName)
+	if err != nil {
+		return fmt.Errorf("Failed to list CloudWatch Logs Group [%s]: %s", groupName, err.Error())
+	}
+
+	for _, group := range groups {
+		if conv.S(group.LogGroupName) == groupName {
+			// log group exists; return with no error
+			return nil
+		}
+	}
+
+	// log group does not exist; create a new group
+	console.AddingResource("Creating CloudWatch Logs Group", groupName, false)
+	if err := c.awsClient.CloudWatchLogs().CreateGroup(groupName); err != nil {
+		return fmt.Errorf("Failed to create CloudWatch Logs Group [%s]: %s", groupName, err.Error())
 	}
 
 	return nil

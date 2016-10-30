@@ -9,6 +9,7 @@ type Config struct {
 	Units        *uint16            `json:"units,omitempty" yaml:"units,omitempty"`
 	Env          map[string]string  `json:"env,omitempty" yaml:"env,omitempty"`
 	LoadBalancer ConfigLoadBalancer `json:"load_balancer" yaml:"load_balancer"`
+	Logging      ConfigLogging      `json:"logging" yaml:"logging"`
 	AWS          ConfigAWS          `json:"aws" yaml:"aws"`
 	Docker       ConfigDocker       `json:"docker" yaml:"docker"`
 }
@@ -27,6 +28,11 @@ type ConfigLoadBalancerHealthCheck struct {
 	Timeout        *string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	HealthyLimit   *uint16 `json:"healthy_limit,omitempty" yaml:"healthy_limit,omitempty"`
 	UnhealthyLimit *uint16 `json:"unhealthy_limit,omitempty" yaml:"unhealthy_limit,omitempty"`
+}
+
+type ConfigLogging struct {
+	Driver  *string           `json:"driver,omitempty" yaml:"driver,omitempty"`
+	Options map[string]string `json:"options" yaml:"options"`
 }
 
 type ConfigAWS struct {

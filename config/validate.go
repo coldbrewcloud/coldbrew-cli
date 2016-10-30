@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/coldbrewcloud/coldbrew-cli/aws"
 	"github.com/coldbrewcloud/coldbrew-cli/core"
 	"github.com/coldbrewcloud/coldbrew-cli/utils"
 	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
@@ -88,6 +89,20 @@ func (c *Config) Validate() error {
 
 	if !core.ELBSecurityGroupNameRE.MatchString(conv.S(c.AWS.ELBSecurityGroupName)) {
 		return fmt.Errorf("Invalid ELB Security Group name [%s]", conv.S(c.AWS.ELBSecurityGroupName))
+	}
+
+	switch conv.S(c.Logging.Driver) {
+	case "",
+		aws.ECSTaskDefinitionLogDriverAWSLogs,
+		aws.ECSTaskDefinitionLogDriverJSONFile,
+		aws.ECSTaskDefinitionLogDriverSyslog,
+		aws.ECSTaskDefinitionLogDriverFluentd,
+		aws.ECSTaskDefinitionLogDriverGelf,
+		aws.ECSTaskDefinitionLogDriverJournald,
+		aws.ECSTaskDefinitionLogDriverSplunk:
+		// need more validation for other driver types
+	default:
+		return fmt.Errorf("Log driver [%s] not supported.", conv.S(c.Logging.Driver))
 	}
 
 	if utils.IsBlank(conv.S(c.Docker.Bin)) {

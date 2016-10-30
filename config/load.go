@@ -76,6 +76,18 @@ func (c *Config) Defaults(source *Config) {
 	defU16(&c.LoadBalancer.HealthCheck.HealthyLimit, source.LoadBalancer.HealthCheck.HealthyLimit)
 	defU16(&c.LoadBalancer.HealthCheck.UnhealthyLimit, source.LoadBalancer.HealthCheck.UnhealthyLimit)
 
+	// logging
+	if conv.S(c.Logging.Driver) == "" {
+		// logging option is copied only when logging driver was copied
+		defS(&c.Logging.Driver, source.Logging.Driver)
+		if source.Logging.Options != nil {
+			c.Logging.Options = make(map[string]string)
+			for k, v := range source.Logging.Options {
+				c.Logging.Options[k] = v
+			}
+		}
+	}
+
 	// AWS
 	defS(&c.AWS.ELBLoadBalancerName, source.AWS.ELBLoadBalancerName)
 	defS(&c.AWS.ELBTargetGroupName, source.AWS.ELBTargetGroupName)

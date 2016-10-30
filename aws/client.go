@@ -10,6 +10,7 @@ import (
 	"github.com/coldbrewcloud/coldbrew-cli/aws/ecs"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/elb"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/iam"
+	"github.com/coldbrewcloud/coldbrew-cli/aws/logs"
 	"github.com/coldbrewcloud/coldbrew-cli/aws/sns"
 )
 
@@ -24,6 +25,7 @@ type Client struct {
 	ecrClient         *ecr.Client
 	iamClient         *iam.Client
 	snsClient         *sns.Client
+	logsClient        *logs.Client
 }
 
 func NewClient(region, accessKey, secretKey string) *Client {
@@ -85,4 +87,11 @@ func (c *Client) SNS() *sns.Client {
 		c.snsClient = sns.New(c.session, c.config)
 	}
 	return c.snsClient
+}
+
+func (c *Client) CloudWatchLogs() *logs.Client {
+	if c.logsClient == nil {
+		c.logsClient = logs.New(c.session, c.config)
+	}
+	return c.logsClient
 }

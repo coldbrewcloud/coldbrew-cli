@@ -1,8 +1,6 @@
 package config
 
-import (
-	"github.com/coldbrewcloud/coldbrew-cli/utils/conv"
-)
+import "github.com/coldbrewcloud/coldbrew-cli/utils/conv"
 
 const refConfigYAML = `
 name: echo
@@ -28,6 +26,12 @@ load_balancer:
     timeout: 5s
     healthy_limit: 5
     unhealthy_limit: 2
+
+logging:
+  driver: json-file
+  options:
+    logopt1: value1
+    logopt2: value2
 
 aws:
   elb_name: echo-lb
@@ -65,6 +69,13 @@ const refConfigJSON = `
 			"unhealthy_limit": 2
 		}
 	},
+	"logging": {
+	    "driver": "json-file",
+	    "options": {
+	        "logopt1": "value1",
+	        "logopt2": "value2"
+	    }
+	},
 	"aws": {
 		"elb_name": "echo-lb",
 		"elb_target_group_name": "echo-target",
@@ -99,6 +110,13 @@ var refConfig = &Config{
 			Timeout:        conv.SP("5s"),
 			HealthyLimit:   conv.U16P(5),
 			UnhealthyLimit: conv.U16P(2),
+		},
+	},
+	Logging: ConfigLogging{
+		Driver: conv.SP("json-file"),
+		Options: map[string]string{
+			"logopt1": "value1",
+			"logopt2": "value2",
 		},
 	},
 	AWS: ConfigAWS{

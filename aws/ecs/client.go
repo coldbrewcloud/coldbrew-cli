@@ -71,7 +71,7 @@ func (c *Client) DeleteCluster(clusterName string) error {
 	return err
 }
 
-func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerName string, cpu, memory uint64, envs map[string]string, portMappings []PortMapping, cloudWatchLogs bool) (*_ecs.TaskDefinition, error) {
+func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerName string, cpu, memory uint64, envs map[string]string, portMappings []PortMapping, logDriver string, logDriverOptions map[string]string) (*_ecs.TaskDefinition, error) {
 	if taskDefinitionName == "" {
 		return nil, errors.New("taskDefinitionName is empty")
 	}
@@ -96,14 +96,10 @@ func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerNa
 		Family: _aws.String(taskDefinitionName),
 	}
 
-	// TODO: move this out of this function
-	if cloudWatchLogs {
+	if logDriver != "" {
 		params.ContainerDefinitions[0].LogConfiguration = &_ecs.LogConfiguration{
-			LogDriver: _aws.String(_ecs.LogDriverAwslogs),
-			Options: _aws.StringMap(map[string]string{
-				"awslogs-group":  "coldbrewcloud-deploy-logs",
-				"awslogs-region": c.awsRegion,
-			}),
+			LogDriver: _aws.String(logDriver),
+			Options:   _aws.StringMap(logDriverOptions),
 		}
 	}
 

@@ -58,3 +58,7 @@ func DefaultELBLoadBalancerSecurityGroupName(appName string) string {
 func DefaultECRRepository(appName string) string {
 	return fmt.Sprintf("coldbrew/%s", appName)
 }
+
+func DefaultCloudWatchLogsGroupName(appName, clusterName string) string {
+	return fmt.Sprintf("coldbrew-%s-%s", clusterName, appName)
+}
