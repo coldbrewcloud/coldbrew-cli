@@ -245,6 +245,29 @@ func TestConfig_Validate(t *testing.T) {
 	conf.LoadBalancer.HealthCheck.UnhealthyLimit = conv.U16P(0)
 	assert.NotNil(t, conf.Validate())
 
+	// Logging Driver
+	conf = DefaultConfig("app1")
+	conf.Logging.Driver = nil
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("json-file")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("syslog")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("journald")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("gelf")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("fluentd")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("splunk")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("awslogs")
+	assert.Nil(t, conf.Validate())
+	conf.Logging.Driver = conv.SP("unknowndriver")
+	assert.NotNil(t, conf.Validate())
+
 	// AWS ECR Repository Name
 	conf = DefaultConfig("app1")
 	conf.AWS.ECRRepositoryName = nil
