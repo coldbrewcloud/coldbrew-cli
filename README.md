@@ -45,13 +45,13 @@ See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for 
 
 ### Tutorials
 
-Check out tutorials here:
+Check out tutorials:
 - [echo](https://github.com/coldbrewcloud/tutorial-echo): running a simple HTTP service application on AWS
 - [WordPress](https://github.com/coldbrewcloud/tutorial-wordpress): running a scalable WordPress website on AWS
 
-### Core Functions
+## Core Functions
 
-#### Create Cluster
+### Create Cluster
 
 To start deploying your applications, you need to have at least one cluster set up.
 
@@ -63,7 +63,7 @@ coldbrew cluster-create {cluster-name}
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-create.gif?v=1" width="800">
 
-#### Configure App
+### Configure App
 
 The next step is prepare the app [configuration file](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Configuration-File).
 
@@ -75,7 +75,7 @@ You can manually create/edit your configuration file, or, you can use [init](htt
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="800">
 
-#### Deploy App
+### Deploy App
 
 Once the configuration file is ready, now you can deploy your app in the cluster.
 
@@ -92,7 +92,7 @@ Then, within a couple minutes _(mostly less than a minute)_, you will see your n
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-deploy.gif?v=1" width="800">
 
-#### Check Status
+### Check Status
 
 You can use [status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-status) and [cluster-status](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-status) commands to check the running status of your app and cluster respectively.
 
@@ -108,7 +108,7 @@ coldbrew cluster-status {cluster-name}
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-cluster-status.gif?v=1" width="800">
 
-#### Delete App
+### Delete App
 
 When you no longer need your app, you can remove your app from the cluster using [delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-delete) command.
 
@@ -121,7 +121,7 @@ coldbrew delete
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-delete.gif?v=1" width="800">
 
 
-#### Delete Cluster
+### Delete Cluster
 
 You can use a cluster for more than one apps, but, when you no longer need the cluster, you use [cluster-delete](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-cluster-delete) command to clean up all the resources.
 
