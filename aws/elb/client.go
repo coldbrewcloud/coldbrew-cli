@@ -42,7 +42,30 @@ func (c *Client) CreateLoadBalancer(elbName string, internetFacing bool, securit
 	return res.LoadBalancers[0], nil
 }
 
-func (c *Client) RetrieveLoadBalancer(elbName string) (*_elb.LoadBalancer, error) {
+func (c *Client) RetrieveLoadBalancer(elbARN string) (*_elb.LoadBalancer, error) {
+	params := &_elb.DescribeLoadBalancersInput{
+		LoadBalancerArns: _aws.StringSlice([]string{elbARN}),
+	}
+	res, err := c.svc.DescribeLoadBalancers(params)
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == "LoadBalancerNotFound" {
+				return nil, nil
+			}
+		}
+		return nil, err
+	}
+
+	if len(res.LoadBalancers) == 0 {
+		return nil, nil
+	} else if len(res.LoadBalancers) == 1 {
+		return res.LoadBalancers[0], nil
+	}
+
+	return nil, fmt.Errorf("Invalid result: %v", res.LoadBalancers)
+}
+
+func (c *Client) RetrieveLoadBalancerByName(elbName string) (*_elb.LoadBalancer, error) {
 	params := &_elb.DescribeLoadBalancersInput{
 		Names: _aws.StringSlice([]string{elbName}),
 	}
