@@ -24,7 +24,7 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 	}
 
 	// Check if specified ELB Load Balancer exists or not.
-	elbLoadBalancer, err := c.awsClient.ELB().RetrieveLoadBalancer(elbLoadBalancerName)
+	elbLoadBalancer, err := c.awsClient.ELB().RetrieveLoadBalancerByName(elbLoadBalancerName)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
 	}

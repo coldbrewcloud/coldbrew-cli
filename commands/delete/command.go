@@ -72,7 +72,7 @@ func (c *Command) Run() error {
 
 	// ELB Load Balancer
 	elbLoadBalancerName := conv.S(conf.AWS.ELBLoadBalancerName)
-	elbLoadBalancer, err := c.awsClient.ELB().RetrieveLoadBalancer(elbLoadBalancerName)
+	elbLoadBalancer, err := c.awsClient.ELB().RetrieveLoadBalancerByName(elbLoadBalancerName)
 	if err != nil {
 		return console.ExitWithErrorString("Failed to retrieve ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
 	}
