@@ -43,6 +43,12 @@ This is what a typical deployment workflow might look like:
 
 See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for more details.
 
+### Tutorials
+
+Check out tutorials here:
+- [echo](https://github.com/coldbrewcloud/tutorial-echo): running a simple HTTP service application on AWS
+- [WordPress](https://github.com/coldbrewcloud/tutorial-wordpress): running a scalable WordPress website on AWS
+
 ### Core Functions
 
 #### Create Cluster
