@@ -46,6 +46,7 @@ See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for 
 ### Tutorials
 
 Check out tutorials:
+- [Node.JS](https://github.com/coldbrewcloud/tutorial-nodejs): running a Node.JS application on AWS
 - [echo](https://github.com/coldbrewcloud/tutorial-echo): running a simple HTTP service application on AWS
 - [WordPress](https://github.com/coldbrewcloud/tutorial-wordpress): running a scalable WordPress website on AWS
 
