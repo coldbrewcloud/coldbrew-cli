@@ -48,6 +48,7 @@ See [Concepts](https://github.com/coldbrewcloud/coldbrew-cli/wiki/Concepts) for 
 Check out tutorials:
 - [Running a Node.JS application on AWS](https://github.com/coldbrewcloud/tutorial-nodejs)
 - [Running a Slack bot on AWS](https://github.com/coldbrewcloud/tutorial-echo-slack-bot)
+- [Running a Meteor application on AWS](https://github.com/coldbrewcloud/tutorial-meteor)
 - [Running a Go application on AWS](https://github.com/coldbrewcloud/tutorial-echo)
 - [Running a scalable WordPress website on AWS](https://github.com/coldbrewcloud/tutorial-wordpress)
 
