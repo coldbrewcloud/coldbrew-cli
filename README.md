@@ -13,6 +13,12 @@ tl;dr **coldbrew-cli** automates your Docker container deployment on AWS.
 * lessen mistakes by removing boring repetitions
 * easier integration with CI
 
+### Features
+
+- ECS cluster with EC2 Auto Scaling Group configured
+- Support ELB Application Load Balance _(multiple app instances on a single EC2 instance)_
+- Logging: most of Docker logging drivers and AWS CloudWatch Logs
+
 ## Getting Started
 
 ### Install and Configure CLI
