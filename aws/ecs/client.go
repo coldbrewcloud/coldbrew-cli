@@ -126,9 +126,9 @@ func (c *Client) UpdateTaskDefinition(taskDefinitionName, image, taskContainerNa
 	return res.TaskDefinition, nil
 }
 
-func (c *Client) RetrieveTaskDefinition(taskDefinitionName string) (*_ecs.TaskDefinition, error) {
+func (c *Client) RetrieveTaskDefinition(taskDefinitionNameOrARN string) (*_ecs.TaskDefinition, error) {
 	params := &_ecs.DescribeTaskDefinitionInput{
-		TaskDefinition: _aws.String(taskDefinitionName),
+		TaskDefinition: _aws.String(taskDefinitionNameOrARN),
 	}
 
 	res, err := c.svc.DescribeTaskDefinition(params)
