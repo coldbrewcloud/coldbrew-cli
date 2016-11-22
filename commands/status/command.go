@@ -34,22 +34,43 @@ func (c *Command) Init(ka *kingpin.Application, globalFlags *flags.GlobalFlags) 
 func (c *Command) Run() error {
 	c.awsClient = c.globalFlags.GetAWSClient()
 
+	appName := ""
+	clusterName := ""
+
 	// app configuration
 	configFilePath, err := c.globalFlags.GetConfigFile()
 	if err != nil {
 		return console.ExitWithError(err)
 	}
-	configData, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		return console.ExitWithErrorString("Failed to read configuration file [%s]: %s", configFilePath, err.Error())
-	}
-	conf, err := config.Load(configData, conv.S(c.globalFlags.ConfigFileFormat), core.DefaultAppName(configFilePath))
-	if err != nil {
-		return console.ExitWithError(err)
+	if utils.FileExists(configFilePath) {
+		configData, err := ioutil.ReadFile(configFilePath)
+		if err != nil {
+			return console.ExitWithErrorString("Failed to read configuration file [%s]: %s", configFilePath, err.Error())
+		}
+		conf, err := config.Load(configData, conv.S(c.globalFlags.ConfigFileFormat), core.DefaultAppName(configFilePath))
+		if err != nil {
+			return console.ExitWithError(err)
+		}
+
+		appName = conv.S(conf.Name)
+		clusterName = conv.S(conf.ClusterName)
 	}
 
-	appName := conv.S(conf.Name)
-	clusterName := conv.S(conf.ClusterName)
+	// app/cluster name from CLI will override configuration file
+	if !utils.IsBlank(conv.S(c.commandFlags.AppName)) {
+		appName = conv.S(c.commandFlags.AppName)
+	}
+	if !utils.IsBlank(conv.S(c.commandFlags.ClusterName)) {
+		clusterName = conv.S(c.commandFlags.ClusterName)
+	}
+
+	if utils.IsBlank(appName) {
+		return console.ExitWithErrorString("App name is required.")
+	}
+	if utils.IsBlank(clusterName) {
+		return console.ExitWithErrorString("Cluster name is required.")
+	}
+
 	console.Info("Application")
 	console.DetailWithResource("Name", appName)
 	console.DetailWithResource("Cluster", clusterName)
