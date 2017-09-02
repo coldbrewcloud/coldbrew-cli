@@ -3,7 +3,6 @@ package clustercreate
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -17,6 +16,18 @@ const (
 	defaultECSContainerInstanceImageIDBaseURL = "https://s3-us-west-2.amazonaws.com/files.coldbrewcloud.com/coldbrew-cli/ecs-ci-ami/default/"
 	defaultECSContainerInstanceImageOwnerID   = "865092420289"
 )
+
+var defaultImageID = map[string]string{
+	aws.AWSRegionAPNorthEast1: "ami-3217ed54",
+	aws.AWSRegionAPSouthEast1: "ami-b30b67d0",
+	aws.AWSRegionAPSouthEast2: "ami-5f38dd3d",
+	aws.AWSRegionEUCentral1:   "ami-3645f059",
+	aws.AWSRegionEUWest1:      "ami-d104c1a8",
+	aws.AWSRegionUSEast1:      "ami-c25a4eb9",
+	aws.AWSRegionUSEast2:      "ami-498dae2c",
+	aws.AWSRegionUSWest1:      "ami-fdcefa9d",
+	aws.AWSRegionUSWest2:      "ami-1d28dd65",
+}
 
 var defaultECSContainerInstanceAmazonImageID = map[string]string{
 	aws.AWSRegionUSEast1:      "ami-1924770e",
@@ -49,7 +60,7 @@ func (c *Command) getAWSInfo() (string, string, []string, error) {
 }
 
 func (c *Command) retrieveDefaultECSContainerInstancesImageID(region string) string {
-	defaultImages, err := c.awsClient.EC2().FindImage(defaultECSContainerInstanceImageOwnerID, core.AWSTagNameCreatedTimestamp)
+	/*defaultImages, err := c.awsClient.EC2().FindImage(defaultECSContainerInstanceImageOwnerID, core.AWSTagNameCreatedTimestamp)
 	if err == nil {
 		var latestImage *ec2.Image
 		var latestImageCreationTime string
@@ -76,6 +87,9 @@ func (c *Command) retrieveDefaultECSContainerInstancesImageID(region string) str
 		if latestImage != nil {
 			return conv.S(latestImage.ImageId)
 		}
+	}*/
+	if imageID, ok := defaultImageID[region]; ok {
+		return imageID
 	}
 
 	// if failed to find coldbrew-cli default image, use Amazon ECS optimized image as fallback
