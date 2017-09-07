@@ -45,7 +45,7 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 			listenerExists := false
 			listeners, err := c.awsClient.ELB().RetrieveLoadBalancerListeners(conv.S(elbLoadBalancer.LoadBalancerArn))
 			if err != nil {
-				return nil, fmt.Errorf("Failed to retrieve listeners for ELB Load Balanacer [%s]: %s", elbLoadBalancerName, err.Error())
+				return nil, fmt.Errorf("Failed to retrieve listeners for ELB Load Balancer [%s]: %s", elbLoadBalancerName, err.Error())
 			}
 		loop1:
 			for _, l := range listeners {
@@ -108,7 +108,7 @@ func (c *Command) prepareELBLoadBalancer(ecsServiceRoleName, ecsTaskContainerNam
 		// Create a new EC2 Security Group for ELB Load Balancer.
 		// Create a new ELB Target Group
 		// Create a new ELB Load Balancer.
-		// Create a new listener between ELB Load Balanacer and ELB Target Group.
+		// Create a new listener between ELB Load Balancer and ELB Target Group.
 
 		// create ELB target group
 		console.AddingResource("Creating ELB Target Group", elbTargetGroupName, false)
@@ -201,7 +201,7 @@ func (c *Command) createELBLoadBalancer(name, vpcID, securityGroupID string) (st
 		return "", fmt.Errorf("Failed to list subnets: %s", err.Error())
 	}
 
-	console.AddingResource("Creating ELB Load Balanacer", name, false)
+	console.AddingResource("Creating ELB Load Balancer", name, false)
 	lb, err := c.awsClient.ELB().CreateLoadBalancer(name, true, []string{securityGroupID}, subnetIDs)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create ELB Load Balancer [%s]: %s", name, err.Error())
