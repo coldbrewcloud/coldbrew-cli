@@ -1,5 +1,5 @@
-hash: 863ed76178305c61853de7c2bf099c46b645469644746a91277320fda907c3f2
-updated: 2016-10-21T17:58:29.817692081-07:00
+hash: 002c97ae413cac5ad4320b20f166b0e5084e26e07ade3d516d4ea5be576b0cc3
+updated: 2018-03-18T16:08:47.351643-07:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -36,6 +36,7 @@ imports:
   - private/protocol/xml/xmlutil
   - private/waiter
   - service/autoscaling
+  - service/cloudwatchlogs
   - service/ec2
   - service/ecr
   - service/ecs
@@ -44,21 +45,21 @@ imports:
   - service/sns
   - service/sts
 - name: github.com/d5/cc
-  version: fa1d5c6f5b0b91ecb53be58b0f7f0ec44475d1a2
+  version: 61e59598c69a49fd4d901b6d5cf946e67d649349
 - name: github.com/go-ini/ini
-  version: 6e4869b434bd001f6983749881c7ead3545887d8
+  version: 6ecc596bd756a16c6e93e4ef9225ecdb9f54ed2c
 - name: github.com/jmespath/go-jmespath
-  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+  version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
 - name: github.com/mattn/go-colorable
-  version: 6c903ff4aa50920ca86087a280590b36b3152b9c
+  version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/stretchr/testify
   version: d77da356e56a7428ad25149ca77381849a6a5232
   subpackages:
   - assert
 - name: golang.org/x/sys
-  version: 9bb9f0998d48b31547d975974935ae9b48c7a03c
+  version: 01acb38716e021ed1fc03a602bdb5838e1358c5e
   subpackages:
   - unix
 - name: gopkg.in/alecthomas/kingpin.v2
