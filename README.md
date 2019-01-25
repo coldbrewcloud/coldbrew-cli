@@ -1,8 +1,6 @@
 # coldbrew-cli
 
-[![Build Status](https://travis-ci.org/coldbrewcloud/coldbrew-cli.svg?branch=master)](https://travis-ci.org/coldbrewcloud/coldbrew-cli)
-
-tl;dr **coldbrew-cli** automates your Docker container deployment on AWS.
+**NOTE: Unfortunately, coldbrew-cli is not actively maintained at the moment. [ecs-cli](https://github.com/aws/amazon-ecs-cli) could be an option instead.**
 
 ### Objectives
 
