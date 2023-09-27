@@ -32,7 +32,7 @@ func NewGlobalFlags(ka *kingpin.Application) *GlobalFlags {
 	return &GlobalFlags{
 		AppDirectory:     ka.Flag("app-dir", "Application directory").Short('D').Default(".").String(),
 		ConfigFile:       ka.Flag("config", "Configuration file path").Short('C').Default("").String(),
-		ConfigFileFormat: ka.Flag("config-format", "Configuraiton file format (JSON/YAML)").Default(GlobalFlagsConfigFileFormatYAML).String(),
+		ConfigFileFormat: ka.Flag("config-format", "Configuration file format (JSON/YAML)").Default(GlobalFlagsConfigFileFormatYAML).String(),
 		DisableColoring:  ka.Flag("disable-color", "Disable colored outputs").Bool(),
 		Verbose:          ka.Flag("verbose", "Enable verbose logging").Short('V').Default("false").Bool(),
 		AWSAccessKey:     ka.Flag("aws-access-key", "AWS Access Key ID ($AWS_ACCESS_KEY_ID)").Envar("AWS_ACCESS_KEY_ID").Default("").String(),
