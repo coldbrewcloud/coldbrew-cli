@@ -78,7 +78,7 @@ The next step is prepare the app [configuration file](https://github.com/coldbre
 coldbrew init --default
 ```
 
-You can manually create/edit your configuration file, or, you can use [init](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-init) command to generate a proper default configuraiton.
+You can manually create/edit your configuration file, or, you can use [init](https://github.com/coldbrewcloud/coldbrew-cli/wiki/CLI-Command:-init) command to generate a proper default configuration.
 
 <img src="https://raw.githubusercontent.com/coldbrewcloud/assets/master/coldbrew-cli/command-init-default.gif?v=1" width="800">
 
